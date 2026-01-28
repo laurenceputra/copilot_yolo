@@ -217,7 +217,7 @@ if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then
     printf 'copilot '
     printf '%q ' "${pass_args[@]}"
   else
-    printf 'copilot yolo '
+    printf 'copilot --yolo '
     printf '%q ' "${pass_args[@]}"
   fi
   printf '\n'
@@ -263,5 +263,5 @@ fi
 if [[ "${#pass_args[@]}" -gt 0 && "${pass_args[0]}" == "login" ]]; then
   docker run "${docker_args[@]}" "${IMAGE}" copilot "${pass_args[@]}"
 else
-  docker run "${docker_args[@]}" "${IMAGE}" copilot yolo "${pass_args[@]}"
+  docker run "${docker_args[@]}" "${IMAGE}" copilot --yolo "${pass_args[@]}"
 fi
