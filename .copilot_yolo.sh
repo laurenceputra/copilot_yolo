@@ -241,12 +241,19 @@ if [[ -z "${latest_version}" && "${image_exists}" == "1" && "${COPILOT_SKIP_VERS
 fi
 
 if [[ "${need_build}" == "1" ]]; then
-  if [[ -n "${latest_version}" && -n "${image_version}" && "${latest_version}" != "${image_version}" ]]; then
-    echo "Building Docker image with GitHub Copilot CLI ${latest_version}..."
-  elif [[ -n "${latest_version}" ]]; then
-    echo "Building Docker image with GitHub Copilot CLI ${latest_version}..."
-  else
-    echo "Building Docker image..."
+  # Only show build message if we haven't already shown a more specific one
+  if [[ "${COPILOT_BUILD_NO_CACHE:-0}" == "1" || "${COPILOT_BUILD_PULL:-0}" == "1" || "${PULL_REQUESTED}" == "1" ]]; then
+    if [[ -n "${latest_version}" ]]; then
+      echo "Building Docker image with GitHub Copilot CLI ${latest_version}..."
+    else
+      echo "Building Docker image..."
+    fi
+  elif [[ "${image_exists}" == "0" ]]; then
+    # Message already shown earlier: "Docker image not found. Building new image..."
+    :
+  elif [[ -n "${latest_version}" && -n "${image_version}" && "${latest_version}" != "${image_version}" ]]; then
+    # Message already shown earlier: "Rebuilding Docker image with latest GitHub Copilot CLI..."
+    :
   fi
   # Force BuildKit to avoid the legacy builder deprecation warning.
   DOCKER_BUILDKIT=1 docker build "${build_args[@]}" -t "${IMAGE}" -f "${DOCKERFILE}" "${SCRIPT_DIR}"
