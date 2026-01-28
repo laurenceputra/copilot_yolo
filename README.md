@@ -68,7 +68,7 @@ are shared between runs.
 ## Configuration
 
 - `COPILOT_BASE_IMAGE` (default: `node:20-slim`)
-- `COPILOT_YOLO_IMAGE` (default: `copilot-cli-yolo:local`; only set to images you trust)
+- `COPILOT_YOLO_IMAGE` (default: `copilot-cli-yolo:local`; only be set to images you trust)
 - `COPILOT_YOLO_HOME` (default: `/home/copilot`; advanced, must be an absolute container path)
 - `COPILOT_YOLO_WORKDIR` (default: `/workspace`; advanced, must be an absolute container path)
 - `COPILOT_YOLO_CLEANUP` (default: `1`) to chown `/workspace` to your UID on exit; set to `0` to skip
@@ -92,8 +92,9 @@ Git operations with authentication. The container also has your GitHub Copilot
 credentials mounted.
 
 The container enables passwordless `sudo` for the mapped user to allow system
-installs. Use with care; `sudo` writes into `/workspace` are cleaned up via a
-chown on exit, but they still run as root inside the container.
+installs. Use with care; `sudo` writes into `/workspace` have their ownership
+restored via a chown on exit (but file content and modifications are not undone),
+and they still run as root inside the container.
 
 ## Update
 
