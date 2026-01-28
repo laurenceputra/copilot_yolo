@@ -6,6 +6,8 @@ A command-line tool that runs the latest GitHub Copilot CLI in Docker with Yolo 
 
 ## Quick Start (One-Liner)
 
+**⚠️ Security Note:** Always review scripts before running them. You can view the script at: https://github.com/laurenceputra/copilot_yolo/blob/main/copilot_yolo.sh
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/copilot_yolo.sh | bash -s -- --help
 ```
@@ -14,6 +16,15 @@ Or to run immediately in your current directory:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/copilot_yolo.sh | bash
+```
+
+For safer usage, download and inspect first:
+
+```bash
+curl -fsSL -o copilot_yolo.sh https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/copilot_yolo.sh
+less copilot_yolo.sh  # Review the script
+chmod +x copilot_yolo.sh
+./copilot_yolo.sh
 ```
 
 ## Features

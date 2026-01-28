@@ -139,7 +139,9 @@ get_installed_copilot_version() {
 
 # Function to check if rebuild is needed due to new version
 check_version_and_rebuild() {
-    # Skip if npm is not available
+    # Note: This check runs on every script execution when an image exists.
+    # While it adds some latency, it ensures users always have the latest copilot CLI.
+    # Skip if npm is not available (offline scenarios)
     if ! command -v npm &> /dev/null; then
         return 0
     fi
@@ -201,10 +203,9 @@ run_copilot() {
         docker_cmd+=(-v "$HOME/.ssh:/home/$USERNAME/.ssh:ro")
     fi
     
-    # Mount GitHub Copilot config directory (now guaranteed to exist)
-    if [[ -d "$HOME/.config/github-copilot" ]]; then
-        docker_cmd+=(-v "$HOME/.config/github-copilot:/home/$USERNAME/.config/github-copilot")
-    fi
+    # Mount GitHub Copilot config directory
+    # Note: ensure_directories() is called earlier, so this directory is guaranteed to exist
+    docker_cmd+=(-v "$HOME/.config/github-copilot:/home/$USERNAME/.config/github-copilot")
     
     # Set working directory
     docker_cmd+=(-w /workspace)
