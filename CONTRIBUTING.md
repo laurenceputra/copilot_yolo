@@ -10,23 +10,27 @@ git clone https://github.com/laurenceputra/copilot_yolo.git
 cd copilot_yolo
 ```
 
-2. Install in development mode:
+2. Make the script executable:
 ```bash
-pip install -e .
+chmod +x copilot_yolo.sh
 ```
 
-3. Make your changes
+3. Make your changes to:
+   - `copilot_yolo.sh` - Main bash script
+   - `Dockerfile` - Docker image definition
+   - `entrypoint.sh` - Container entrypoint script
+   - `README.md` - Documentation
 
 4. Test your changes:
 ```bash
-# Test the CLI
-copilot_yolo --help
+# Test the script
+./copilot_yolo.sh --help
 
 # Test with a sample project
 mkdir -p /tmp/test-project
 cd /tmp/test-project
 echo "print('hello')" > test.py
-copilot_yolo
+/path/to/copilot_yolo/copilot_yolo.sh
 ```
 
 ## Rebuilding the Docker Image
@@ -34,15 +38,31 @@ copilot_yolo
 After making changes to the Dockerfile or entrypoint script:
 
 ```bash
-copilot_yolo --rebuild
+./copilot_yolo.sh --rebuild
 ```
 
 ## Code Style
 
-- Follow PEP 8 for Python code
-- Use meaningful variable and function names
-- Add docstrings to functions
-- Keep functions focused and small
+### Bash Scripts
+- Follow the Google Shell Style Guide
+- Use `shellcheck` to lint bash scripts
+- Add comments for complex logic
+- Use meaningful variable names
+- Quote variables to prevent word splitting
+
+### Docker Files
+- Keep layers minimal
+- Clean up after installing packages
+- Use specific versions where possible
+
+## Testing
+
+Before submitting a PR, test:
+
+1. Fresh Docker build: `./copilot_yolo.sh --rebuild`
+2. Running in different directories
+3. Help output: `./copilot_yolo.sh --help`
+4. Edge cases (non-existent directory, no Docker, etc.)
 
 ## Pull Request Process
 

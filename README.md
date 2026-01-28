@@ -2,6 +2,8 @@
 
 A command-line tool that runs the latest GitHub Copilot CLI in Docker with Yolo mode, automatically mounting necessary directories and maintaining user permissions with sudo access.
 
+**No installation required!** Just Docker and Bash (which comes with most Unix systems).
+
 ## Features
 
 - 🐳 Runs the latest `copilot` CLI in Docker (no local installation needed)
@@ -11,6 +13,7 @@ A command-line tool that runs the latest GitHub Copilot CLI in Docker with Yolo 
 - 👤 Maintains your user ID and group ID in the container
 - 🔑 Provides sudo access within the container for installing packages
 - 🚀 Runs copilot in Yolo mode automatically
+- ⚡ Pure Bash - no Python or other dependencies needed
 
 ## What is Yolo Mode?
 
@@ -23,30 +26,47 @@ Yolo mode is GitHub Copilot's autonomous mode where the AI agent can:
 ## Prerequisites
 
 - Docker installed and running
-- Python 3.6 or higher (for installation)
-- GitHub Copilot CLI access
+- Bash (comes pre-installed on Linux and macOS)
 
 ## Installation
 
-### From Source
+### Quick Install
 
 ```bash
+# Clone the repository
 git clone https://github.com/laurenceputra/copilot_yolo.git
 cd copilot_yolo
-pip install -e .
+
+# Make the script executable (if not already)
+chmod +x copilot_yolo.sh
+
+# Optionally, install to your PATH
+sudo cp copilot_yolo.sh /usr/local/bin/copilot_yolo
 ```
 
-### Using pip (once published)
+### Manual Installation
+
+Just download the `copilot_yolo.sh` script and make it executable:
 
 ```bash
-pip install copilot_yolo
+curl -o copilot_yolo https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/copilot_yolo.sh
+chmod +x copilot_yolo
+# Move to a directory in your PATH
+sudo mv copilot_yolo /usr/local/bin/
 ```
 
 ## Usage
 
 ### Basic Usage
 
-Simply run `copilot_yolo` in any directory where you want to use GitHub Copilot:
+Simply run `copilot_yolo.sh` (or `copilot_yolo` if installed to PATH) in any directory where you want to use GitHub Copilot:
+
+```bash
+cd /path/to/your/project
+./copilot_yolo.sh
+```
+
+Or if installed to PATH:
 
 ```bash
 cd /path/to/your/project
@@ -64,14 +84,14 @@ This will:
 ### Options
 
 ```bash
+# Show help
+./copilot_yolo.sh --help
+
 # Specify a different workspace directory
-copilot_yolo --workspace /path/to/project
+./copilot_yolo.sh --workspace /path/to/project
 
 # Force rebuild of the Docker image (to get latest copilot CLI)
-copilot_yolo --rebuild
-
-# Show copilot_yolo help
-copilot_yolo --help
+./copilot_yolo.sh --rebuild
 ```
 
 ### Using Sudo in the Container
@@ -92,6 +112,18 @@ The tool:
    - Creates a user with your exact UID and GID to maintain file permissions
    - Gives the user passwordless sudo access
    - Executes `copilot yolo` in the workspace directory
+
+## Project Structure
+
+```
+copilot_yolo/
+├── copilot_yolo.sh    # Main bash script
+├── Dockerfile         # Docker image definition
+├── entrypoint.sh      # Container entrypoint for user setup
+└── README.md          # This file
+```
+
+The bash script handles everything - checking Docker, building the image, and running the container with the right configuration.
 
 ## Directory Mounts
 
@@ -126,12 +158,16 @@ Make sure you're logged in to GitHub Copilot. On first run, the Copilot CLI will
 
 ```bash
 # The CLI will guide you through authentication
+./copilot_yolo.sh
+# or if installed to PATH
 copilot_yolo
 ```
 
 ### Rebuilding the image
 If you want to get the latest copilot CLI version, rebuild the image:
 ```bash
+./copilot_yolo.sh --rebuild
+# or if installed to PATH
 copilot_yolo --rebuild
 ```
 
@@ -144,8 +180,11 @@ If you're behind a corporate proxy with SSL inspection, you may need to configur
 # Navigate to your project
 cd ~/my-project
 
-# Run copilot in Yolo mode
+# Run copilot in Yolo mode (if installed to PATH)
 copilot_yolo
+
+# Or run the script directly
+./copilot_yolo.sh
 
 # Copilot will analyze your project and wait for instructions
 # You can ask it to:
@@ -160,7 +199,7 @@ copilot_yolo
 - Requires Docker to be installed and running
 - First run takes a few minutes to build the Docker image
 - Internet connection required to pull base image and install copilot
-- Currently supports Linux and macOS only (uses Unix-specific user management)
+- Requires Bash (available by default on Linux and macOS)
 
 ## Security Considerations
 
@@ -175,6 +214,10 @@ This tool is designed for development environments. Be aware of the following:
 **Recommendation**: Only use this tool in trusted development environments and on code you're comfortable having an AI agent modify.
 
 ## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
