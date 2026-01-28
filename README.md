@@ -48,17 +48,16 @@ The container automatically mounts the following paths from your host system:
 | Host Path | Container Path | Mode | Purpose |
 |-----------|---------------|------|---------|
 | Current directory (`$(pwd)`) | `/workspace` | Read-write | Your working repository/project files |
-| `~/.config/github-copilot` | `/home/copilot/.config/github-copilot` | Read-write | GitHub Copilot credentials and configuration |
-| `~/.copilot` | `/home/copilot/.copilot` | Read-write | Legacy Copilot credentials (if directory exists) |
+| `~/.copilot` | `/home/copilot/.copilot` | Read-write | Copilot CLI configuration and credentials (if directory exists) |
 | `~/.gitconfig` | `/home/copilot/.gitconfig` | Read-only | Git configuration for authentication (if file exists) |
-| `~/.ssh` | `/home/copilot/.ssh` | Read-only | SSH keys for Git operations (if directory exists) |
 
 **Notes:**
 - The working directory mount is always at `/workspace` by default (configurable via `COPILOT_YOLO_WORKDIR`)
 - Only files within the current directory are visible to the container
-- SSH keys and Git config are mounted read-only for security
-- Copilot credentials are shared between runs via the mounted config directories
+- Git config is mounted read-only for security
+- Copilot configuration is shared between runs via `~/.copilot`
 - All file modifications in `/workspace` are immediately reflected on your host system
+- SSH keys are NOT mounted to reduce security blast radius
 
 ## Automatic Updates
 
@@ -97,8 +96,8 @@ For headless or remote environments, use device auth or other login methods:
 copilot_yolo login --help
 ```
 
-The container mounts `~/.config/github-copilot` and `~/.copilot` (if it exists)
-from your host, so credentials are shared between runs.
+The container mounts `~/.copilot` (if it exists) from your host, so credentials 
+are shared between runs.
 
 ## Troubleshooting
 
@@ -129,9 +128,13 @@ from your host, so credentials are shared between runs.
 
 ## Security note
 
-The container mounts `~/.ssh` (read-only) and `~/.gitconfig` (read-only) to enable
-Git operations with authentication. The container also mounts `~/.config/github-copilot`
-and `~/.copilot` (if it exists) so your GitHub Copilot credentials are available.
+The container mounts `~/.gitconfig` (read-only) to enable Git operations with 
+authentication. The container also mounts `~/.copilot` (if it exists) so your 
+GitHub Copilot CLI configuration and credentials are available.
+
+**Important:** SSH keys (`~/.ssh`) are NOT mounted to reduce the security blast 
+radius. If you need SSH access for Git operations, consider using HTTPS with 
+credential helpers or Git credential manager instead.
 
 The container enables passwordless `sudo` for the mapped user to allow system
 installs. Use with care; `sudo` writes into `/workspace` have their ownership
