@@ -41,6 +41,25 @@ copilot_yolo --help
 By default, your current repo is mounted into the container at `/workspace`,
 so make sure you run `copilot_yolo` from the repo you want Copilot to access.
 
+## What Gets Mounted
+
+The container automatically mounts the following paths from your host system:
+
+| Host Path | Container Path | Mode | Purpose |
+|-----------|---------------|------|---------|
+| Current directory (`$(pwd)`) | `/workspace` | Read-write | Your working repository/project files |
+| `~/.config/github-copilot` | `/home/copilot/.config/github-copilot` | Read-write | GitHub Copilot credentials and configuration |
+| `~/.copilot` | `/home/copilot/.copilot` | Read-write | Legacy Copilot credentials (if directory exists) |
+| `~/.gitconfig` | `/home/copilot/.gitconfig` | Read-only | Git configuration for authentication |
+| `~/.ssh` | `/home/copilot/.ssh` | Read-only | SSH keys for Git operations |
+
+**Notes:**
+- The working directory mount is always at `/workspace` by default (configurable via `COPILOT_YOLO_WORKDIR`)
+- Only files within the current directory are visible to the container
+- SSH keys and Git config are mounted read-only for security
+- Copilot credentials are shared between runs via the mounted config directories
+- All file modifications in `/workspace` are immediately reflected on your host system
+
 ## Automatic Updates
 
 **copilot_yolo automatically ensures you're always using the latest GitHub Copilot CLI.**
