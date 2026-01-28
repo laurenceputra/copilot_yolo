@@ -186,7 +186,6 @@ docker_args=(
   -e TARGET_HOME="${CONTAINER_HOME}"
   -e COPILOT_YOLO_CLEANUP="${COPILOT_YOLO_CLEANUP:-1}"
   -v "${WORKSPACE}:${CONTAINER_WORKDIR}"
-  -v "${HOME}/.config/github-copilot:${CONTAINER_HOME}/.config/github-copilot"
   -w "${CONTAINER_WORKDIR}"
 )
 
@@ -201,10 +200,6 @@ fi
 
 if [[ -f "${HOME}/.gitconfig" ]]; then
   docker_args+=("-v" "${HOME}/.gitconfig:${CONTAINER_HOME}/.gitconfig:ro")
-fi
-
-if [[ -d "${HOME}/.ssh" ]]; then
-  docker_args+=("-v" "${HOME}/.ssh:${CONTAINER_HOME}/.ssh:ro")
 fi
 
 if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then
@@ -227,18 +222,6 @@ if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then
   fi
   printf '\n'
   exit 0
-fi
-
-# Ensure host config dir exists so Docker doesn't create it as root.
-if ! mkdir -p "${HOME}/.config/github-copilot"; then
-  echo "Error: unable to create ${HOME}/.config/github-copilot on the host."
-  exit 1
-fi
-
-if [[ ! -w "${HOME}/.config/github-copilot" ]]; then
-  echo "Error: ${HOME}/.config/github-copilot is not writable."
-  echo "Check permissions or set HOME to a writable directory."
-  exit 1
 fi
 
 if [[ -z "${latest_version}" && "${image_exists}" == "1" && "${COPILOT_SKIP_VERSION_CHECK:-0}" != "1" ]]; then
