@@ -1,240 +1,125 @@
 # copilot_yolo
 
-A command-line tool that runs the latest GitHub Copilot CLI in Docker with Yolo mode, automatically mounting necessary directories and maintaining user permissions with sudo access.
+Run the GitHub Copilot CLI in a disposable Docker container with your current
+repo mounted. The script builds a local image and starts Copilot with yolo mode.
+Only the current directory is mounted into the container by default, so other
+host paths are not visible unless you add additional mounts.
 
-**No installation required!** Just Docker and Bash (which comes with most Unix systems).
+## Requirements
 
-## Quick Start (One-Liner)
+- Docker (Desktop or Engine)
+- Bash (macOS/Linux; Windows via WSL recommended)
+- Docker Buildx (recommended for reliable builds): https://docs.docker.com/build/buildx/
 
-**⚠️ Security Note:** Always review scripts before running them. You can view the script at: https://github.com/laurenceputra/copilot_yolo/blob/main/copilot_yolo.sh
+## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/copilot_yolo.sh | bash -s -- --help
+curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/install.sh | bash
 ```
 
-Or to run immediately in your current directory:
+By default this installs into `~/.copilot_yolo` and sources it from your shell
+profile. You can override paths:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/copilot_yolo.sh | bash
+COPILOT_YOLO_DIR="$HOME/.copilot_yolo" \
+COPILOT_YOLO_PROFILE="$HOME/.zshrc" \
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/install.sh)"
 ```
 
-For safer usage, download and inspect first:
+## Quick start
 
 ```bash
-curl -fsSL -o copilot_yolo.sh https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/copilot_yolo.sh
-less copilot_yolo.sh  # Review the script
-chmod +x copilot_yolo.sh
-./copilot_yolo.sh
-```
-
-## Features
-
-- 🐳 Runs the latest `copilot` CLI in Docker (no local installation needed)
-- 🔐 Mounts Git config and SSH keys for authentication
-- 💾 Mounts GitHub Copilot credentials directory
-- 📁 Mounts your current working directory as the workspace
-- 👤 Maintains your user ID and group ID in the container
-- 🔑 Provides sudo access within the container for installing packages
-- 🚀 Runs copilot in Yolo mode automatically
-- ⚡ Pure Bash - no Python or other dependencies needed
-
-## What is Yolo Mode?
-
-Yolo mode is GitHub Copilot's autonomous mode where the AI agent can:
-- Analyze your codebase
-- Make changes directly to your files
-- Execute commands
-- Work on complex tasks with minimal human intervention
-
-## Prerequisites
-
-- Docker installed and running
-- Bash (comes pre-installed on Linux and macOS)
-
-## Installation
-
-### Quick Install
-
-```bash
-# Clone the repository
-git clone https://github.com/laurenceputra/copilot_yolo.git
-cd copilot_yolo
-
-# Make the script executable (if not already)
-chmod +x copilot_yolo.sh
-
-# Optionally, install to your PATH
-sudo cp copilot_yolo.sh /usr/local/bin/copilot_yolo
-```
-
-### Manual Installation
-
-Just download the `copilot_yolo.sh` script and make it executable:
-
-```bash
-curl -o copilot_yolo https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/copilot_yolo.sh
-chmod +x copilot_yolo
-# Move to a directory in your PATH
-sudo mv copilot_yolo /usr/local/bin/
-```
-
-## Usage
-
-### Basic Usage
-
-Simply run `copilot_yolo.sh` (or `copilot_yolo` if installed to PATH) in any directory where you want to use GitHub Copilot:
-
-```bash
-cd /path/to/your/project
-./copilot_yolo.sh
-```
-
-Or if installed to PATH:
-
-```bash
-cd /path/to/your/project
 copilot_yolo
 ```
 
-This will:
-1. Build a custom Docker image (first run only - takes a few minutes)
-2. Mount your current directory to `/workspace` in the container
-3. Mount your Git config, SSH keys, and Copilot credentials
-4. Create a user in the container with your UID/GID
-5. Give the user sudo access (no password required)
-6. Run `copilot yolo` on your workspace
-
-### Options
+Pass-through arguments are forwarded to `copilot`:
 
 ```bash
-# Show help
-./copilot_yolo.sh --help
-
-# Specify a different workspace directory
-./copilot_yolo.sh --workspace /path/to/project
-
-# Force rebuild of the Docker image (to get latest copilot CLI)
-./copilot_yolo.sh --rebuild
+copilot_yolo --help
 ```
 
-### Using Sudo in the Container
+By default, your current repo is mounted into the container at `/workspace`,
+so make sure you run `copilot_yolo` from the repo you want Copilot to access.
 
-The container is set up with a user matching your UID/GID that has passwordless sudo access. This allows Copilot to install packages or perform other administrative tasks when needed.
+## Login
 
-## How It Works
+The first run will prompt you to sign in. You can also log in explicitly:
 
-The tool:
-1. Builds a custom Docker image based on `node:18-slim`
-2. Installs `@github/copilot` from npm
-3. Adds sudo support and a custom entrypoint script
-4. Creates a Docker container that:
-   - Uses your current working directory as `/workspace`
-   - Mounts `~/.gitconfig` for Git configuration (read-only)
-   - Mounts `~/.ssh` for SSH keys (read-only)
-   - Mounts `~/.config/github-copilot` for Copilot credentials
-   - Creates a user with your exact UID and GID to maintain file permissions
-   - Gives the user passwordless sudo access
-   - Executes `copilot yolo` in the workspace directory
-
-## Project Structure
-
-```
-copilot_yolo/
-├── copilot_yolo.sh    # Main bash script
-├── Dockerfile         # Docker image definition
-├── entrypoint.sh      # Container entrypoint for user setup
-└── README.md          # This file
+```bash
+copilot_yolo login
 ```
 
-The bash script handles everything - checking Docker, building the image, and running the container with the right configuration.
+For headless or remote environments, use device auth or other login methods:
 
-## Directory Mounts
+```bash
+copilot_yolo login --help
+```
 
-The following directories are automatically mounted from your host:
-
-| Host Path | Container Path | Mode | Purpose |
-|-----------|---------------|------|---------|
-| Current working directory | `/workspace` | Read-write | Your project files |
-| `~/.gitconfig` | `/home/<user>/.gitconfig` | Read-only | Git configuration |
-| `~/.ssh` | `/home/<user>/.ssh` | Read-only | SSH keys for Git auth |
-| `~/.config/github-copilot` | `/home/<user>/.config/github-copilot` | Read-write | Copilot credentials |
+The container mounts `~/.config/github-copilot` from your host, so credentials
+are shared between runs.
 
 ## Troubleshooting
 
-### Docker not found
-Make sure Docker is installed and running:
+- **Docker not found / daemon not running:** install Docker and start the Docker
+  service, then re-run `copilot_yolo` (see Requirements above for links).
+- **Files missing inside the container:** only the current directory is mounted
+  by default. Run `copilot_yolo` from the repo you want to work on.
+
+## Configuration
+
+- `COPILOT_BASE_IMAGE` (default: `node:20-slim`)
+- `COPILOT_YOLO_IMAGE` (default: `copilot-cli-yolo:local`; only set to images you trust)
+- `COPILOT_YOLO_HOME` (default: `/home/copilot`; advanced, must be an absolute container path)
+- `COPILOT_YOLO_WORKDIR` (default: `/workspace`; advanced, must be an absolute container path)
+- `COPILOT_YOLO_CLEANUP` (default: `1`) to chown `/workspace` to your UID on exit; set to `0` to skip
+- `COPILOT_YOLO_REPO` (default: `laurenceputra/copilot_yolo`) to specify a different repository for updates
+- `COPILOT_YOLO_BRANCH` (default: `main`) to specify a different branch for updates
+- `COPILOT_SKIP_UPDATE_CHECK=1` to skip automatic update checks
+- `COPILOT_BUILD_NO_CACHE=1` to build without cache
+- `COPILOT_BUILD_PULL=1` to pull the base image during build
+- `COPILOT_SKIP_VERSION_CHECK=1` to skip npm version checks and reuse an existing image; requires that the image already exists (for example from a previous run), otherwise the script may fail instead of building it
+- `COPILOT_DRY_RUN=1` to print the computed docker build/run commands without executing
+- `--pull` flag to force a pull when running `./.copilot_yolo.sh`
+- Each run checks npm for the latest `@github/copilot` version (unless skipped)
+  and rebuilds the image if it is out of date.
+- Each run checks for copilot_yolo script updates (unless skipped with `COPILOT_SKIP_UPDATE_CHECK=1`)
+  and auto-updates if a new version is available.
+
+## Security note
+
+The container mounts `~/.ssh` (read-only) and `~/.gitconfig` (read-only) to enable
+Git operations with authentication. The container also has your GitHub Copilot
+credentials mounted.
+
+The container enables passwordless `sudo` for the mapped user to allow system
+installs. Use with care; `sudo` writes into `/workspace` are cleaned up via a
+chown on exit, but they still run as root inside the container.
+
+## Update
+
+Update the wrapper scripts by re-running the installer (it overwrites the
+files inside `COPILOT_YOLO_DIR`):
+
 ```bash
-docker --version
+curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/install.sh | bash
 ```
 
-### Permission issues
-The container runs with your user ID and group ID, so file permissions should be maintained. If you encounter issues, check that your Docker installation allows non-root users to access Docker.
+If you installed from a fork or branch, pass those again:
 
 ```bash
-# Add your user to the docker group
-sudo usermod -aG docker $USER
-# Log out and back in for changes to take effect
+COPILOT_YOLO_REPO="yourname/copilot_yolo" \
+COPILOT_YOLO_BRANCH="main" \
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/yourname/copilot_yolo/main/install.sh)"
 ```
 
-### Authentication issues
-Make sure you're logged in to GitHub Copilot. On first run, the Copilot CLI will prompt you to authenticate:
+The GitHub Copilot CLI image updates automatically when you run `copilot_yolo`.
+To force a rebuild or pull:
 
 ```bash
-# The CLI will guide you through authentication
-./copilot_yolo.sh
-# or if installed to PATH
-copilot_yolo
+COPILOT_BUILD_NO_CACHE=1 copilot_yolo
+# or
+copilot_yolo --pull
 ```
-
-### Rebuilding the image
-If you want to get the latest copilot CLI version, rebuild the image:
-```bash
-./copilot_yolo.sh --rebuild
-# or if installed to PATH
-copilot_yolo --rebuild
-```
-
-### SSL Certificate Issues
-If you're behind a corporate proxy with SSL inspection, you may need to configure Docker to trust your corporate certificates. The Dockerfile includes a workaround for npm SSL issues during the build.
-
-## Example Workflow
-
-```bash
-# Navigate to your project
-cd ~/my-project
-
-# Run copilot in Yolo mode (if installed to PATH)
-copilot_yolo
-
-# Or run the script directly
-./copilot_yolo.sh
-
-# Copilot will analyze your project and wait for instructions
-# You can ask it to:
-# - "Add unit tests for the auth module"
-# - "Refactor the database layer to use TypeScript"
-# - "Fix all linting errors"
-# - "Update dependencies to latest versions"
-```
-
-## Limitations
-
-- Requires Docker to be installed and running
-- First run takes a few minutes to build the Docker image
-- Internet connection required to pull base image and install copilot
-- Requires Bash (available by default on Linux and macOS)
-
-## Security Considerations
-
-This tool is designed for development environments. Be aware of the following:
-
-1. **Yolo Mode**: Runs Copilot in autonomous mode, which can make changes to your files without explicit confirmation
-2. **Workspace Access**: The container has read-write access to your workspace directory
-3. **Sudo Access**: The container user has passwordless sudo to install packages as needed
-4. **Credentials**: GitHub Copilot credentials are mounted to enable authentication
-5. **SSL in Corporate Environments**: The Dockerfile disables SSL verification during npm install to support corporate proxies with SSL inspection
-
-**Recommendation**: Only use this tool in trusted development environments and on code you're comfortable having an AI agent modify.
 
 ## Contributing
 
