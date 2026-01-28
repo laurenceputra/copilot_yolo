@@ -50,8 +50,8 @@ The container automatically mounts the following paths from your host system:
 | Current directory (`$(pwd)`) | `/workspace` | Read-write | Your working repository/project files |
 | `~/.config/github-copilot` | `/home/copilot/.config/github-copilot` | Read-write | GitHub Copilot credentials and configuration |
 | `~/.copilot` | `/home/copilot/.copilot` | Read-write | Legacy Copilot credentials (if directory exists) |
-| `~/.gitconfig` | `/home/copilot/.gitconfig` | Read-only | Git configuration for authentication |
-| `~/.ssh` | `/home/copilot/.ssh` | Read-only | SSH keys for Git operations |
+| `~/.gitconfig` | `/home/copilot/.gitconfig` | Read-only | Git configuration for authentication (if file exists) |
+| `~/.ssh` | `/home/copilot/.ssh` | Read-only | SSH keys for Git operations (if directory exists) |
 
 **Notes:**
 - The working directory mount is always at `/workspace` by default (configurable via `COPILOT_YOLO_WORKDIR`)
