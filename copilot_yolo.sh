@@ -164,8 +164,8 @@ run_copilot() {
     echo "Container will have sudo access for installing packages"
     echo ""
     
-    # Execute docker command
-    "${docker_cmd[@]}"
+    # Execute docker command with exec for better signal handling
+    exec "${docker_cmd[@]}"
 }
 
 # Main function
@@ -178,6 +178,10 @@ main() {
     while [[ $# -gt 0 ]]; do
         case $1 in
             --workspace)
+                if [[ -z "${2:-}" ]]; then
+                    error "--workspace requires a directory argument"
+                    exit 1
+                fi
                 workspace_dir="$2"
                 shift 2
                 ;;
@@ -202,10 +206,11 @@ main() {
     fi
     
     # Resolve workspace directory to absolute path
-    workspace_dir="$(cd "$workspace_dir" 2>/dev/null && pwd)" || {
+    if [[ ! -d "$workspace_dir" ]]; then
         error "Workspace directory does not exist: $workspace_dir"
         exit 1
-    }
+    fi
+    workspace_dir="$(cd "$workspace_dir" && pwd)"
     
     # Build or rebuild the Docker image if needed
     if [[ "$rebuild" == true ]] || ! check_docker_image_exists; then
