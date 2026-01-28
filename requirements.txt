@@ -1,0 +1,2 @@
+# copilot_yolo requirements
+# This package has no Python dependencies beyond the standard library

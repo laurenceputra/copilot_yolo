@@ -6,7 +6,9 @@ RUN apt-get update && \
     apt-get install -y sudo gosu curl git && \
     rm -rf /var/lib/apt/lists/*
 
-# Install GitHub Copilot CLI using npm (with SSL check disabled if needed)
+# Install GitHub Copilot CLI using npm
+# Note: SSL verification is disabled to work in restricted corporate environments
+# with SSL inspection proxies. In production, consider using proper certificate trust.
 RUN npm config set strict-ssl false && \
     npm install -g @github/copilot && \
     npm config set strict-ssl true

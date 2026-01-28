@@ -22,7 +22,10 @@ setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: POSIX :: Linux",
-        "Operating System :: MacOS",
+        "Operating System :: MacOS :: MacOS X",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "Topic :: Software Development :: Tools",
     ],
     python_requires=">=3.6",
     entry_points={

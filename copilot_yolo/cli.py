@@ -5,6 +5,7 @@ import os
 import sys
 import subprocess
 import argparse
+import pwd
 from pathlib import Path
 
 
@@ -28,7 +29,6 @@ def get_uid_gid():
 
 def get_username():
     """Get current username."""
-    import pwd
     return pwd.getpwuid(os.getuid()).pw_name
 
 
@@ -134,11 +134,17 @@ def check_docker():
         if result.returncode != 0:
             print("Error: Docker is not available or not running.", file=sys.stderr)
             print("Please install Docker and ensure it's running.", file=sys.stderr)
+            print("Common fixes:", file=sys.stderr)
+            print("  - Start Docker daemon: sudo systemctl start docker", file=sys.stderr)
+            print("  - Add user to docker group: sudo usermod -aG docker $USER", file=sys.stderr)
             return False
         return True
     except FileNotFoundError:
         print("Error: Docker is not installed.", file=sys.stderr)
         print("Please install Docker from https://docker.com", file=sys.stderr)
+        return False
+    except subprocess.SubprocessError as e:
+        print(f"Error checking Docker: {e}", file=sys.stderr)
         return False
 
 

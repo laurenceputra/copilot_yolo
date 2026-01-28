@@ -4,7 +4,7 @@ A command-line tool that runs the latest GitHub Copilot CLI in Docker with Yolo 
 
 ## Features
 
-- 🐳 Runs the latest `copilot-cli` in Docker (no local installation needed)
+- 🐳 Runs the latest `copilot` CLI in Docker (no local installation needed)
 - 🔐 Mounts Git config and SSH keys for authentication
 - 💾 Mounts GitHub Copilot credentials directory
 - 📁 Mounts your current working directory as the workspace
@@ -12,10 +12,19 @@ A command-line tool that runs the latest GitHub Copilot CLI in Docker with Yolo 
 - 🔑 Provides sudo access within the container for installing packages
 - 🚀 Runs copilot in Yolo mode automatically
 
+## What is Yolo Mode?
+
+Yolo mode is GitHub Copilot's autonomous mode where the AI agent can:
+- Analyze your codebase
+- Make changes directly to your files
+- Execute commands
+- Work on complex tasks with minimal human intervention
+
 ## Prerequisites
 
 - Docker installed and running
 - Python 3.6 or higher (for installation)
+- GitHub Copilot CLI access
 
 ## Installation
 
@@ -45,12 +54,12 @@ copilot_yolo
 ```
 
 This will:
-1. Build a custom Docker image (first run only)
+1. Build a custom Docker image (first run only - takes a few minutes)
 2. Mount your current directory to `/workspace` in the container
 3. Mount your Git config, SSH keys, and Copilot credentials
 4. Create a user in the container with your UID/GID
 5. Give the user sudo access (no password required)
-6. Run `copilot --yolo` on your workspace
+6. Run `copilot yolo` on your workspace
 
 ### Options
 
@@ -58,35 +67,42 @@ This will:
 # Specify a different workspace directory
 copilot_yolo --workspace /path/to/project
 
-# Force rebuild of the Docker image (to get latest copilot-cli)
+# Force rebuild of the Docker image (to get latest copilot CLI)
 copilot_yolo --rebuild
 
-# Pass additional arguments to copilot
-copilot_yolo -- --help
+# Show copilot_yolo help
+copilot_yolo --help
 ```
 
 ### Using Sudo in the Container
 
-The container is set up with a user matching your UID/GID that has passwordless sudo access. This allows you to install packages or perform other administrative tasks:
-
-```bash
-# From within copilot_yolo, if you need to install something:
-sudo apt-get update && sudo apt-get install -y <package>
-```
+The container is set up with a user matching your UID/GID that has passwordless sudo access. This allows Copilot to install packages or perform other administrative tasks when needed.
 
 ## How It Works
 
 The tool:
-1. Builds a custom Docker image based on the official `copilot-cli` image
-2. Adds sudo support and a custom entrypoint script
-3. Creates a Docker container that:
+1. Builds a custom Docker image based on `node:18-slim`
+2. Installs `@github/copilot` from npm
+3. Adds sudo support and a custom entrypoint script
+4. Creates a Docker container that:
    - Uses your current working directory as `/workspace`
-   - Mounts `~/.gitconfig` for Git configuration
+   - Mounts `~/.gitconfig` for Git configuration (read-only)
    - Mounts `~/.ssh` for SSH keys (read-only)
    - Mounts `~/.config/github-copilot` for Copilot credentials
    - Creates a user with your exact UID and GID to maintain file permissions
    - Gives the user passwordless sudo access
-   - Executes `copilot --yolo` in the workspace directory
+   - Executes `copilot yolo` in the workspace directory
+
+## Directory Mounts
+
+The following directories are automatically mounted from your host:
+
+| Host Path | Container Path | Mode | Purpose |
+|-----------|---------------|------|---------|
+| Current working directory | `/workspace` | Read-write | Your project files |
+| `~/.gitconfig` | `/home/<user>/.gitconfig` | Read-only | Git configuration |
+| `~/.ssh` | `/home/<user>/.ssh` | Read-only | SSH keys for Git auth |
+| `~/.config/github-copilot` | `/home/<user>/.config/github-copilot` | Read-write | Copilot credentials |
 
 ## Troubleshooting
 
@@ -97,21 +113,70 @@ docker --version
 ```
 
 ### Permission issues
-The container runs with your user ID and group ID, so file permissions should be maintained. If you encounter issues, check your Docker installation allows non-root users.
+The container runs with your user ID and group ID, so file permissions should be maintained. If you encounter issues, check that your Docker installation allows non-root users to access Docker.
+
+```bash
+# Add your user to the docker group
+sudo usermod -aG docker $USER
+# Log out and back in for changes to take effect
+```
 
 ### Authentication issues
-Make sure you're logged in to GitHub Copilot:
+Make sure you're logged in to GitHub Copilot. On first run, the Copilot CLI will prompt you to authenticate:
+
 ```bash
-# On your host machine, first time setup
-gh auth login
-# or use the copilot CLI directly to authenticate
+# The CLI will guide you through authentication
+copilot_yolo
 ```
 
 ### Rebuilding the image
-If you want to get the latest copilot-cli version, rebuild the image:
+If you want to get the latest copilot CLI version, rebuild the image:
 ```bash
 copilot_yolo --rebuild
 ```
+
+### SSL Certificate Issues
+If you're behind a corporate proxy with SSL inspection, you may need to configure Docker to trust your corporate certificates. The Dockerfile includes a workaround for npm SSL issues during the build.
+
+## Example Workflow
+
+```bash
+# Navigate to your project
+cd ~/my-project
+
+# Run copilot in Yolo mode
+copilot_yolo
+
+# Copilot will analyze your project and wait for instructions
+# You can ask it to:
+# - "Add unit tests for the auth module"
+# - "Refactor the database layer to use TypeScript"
+# - "Fix all linting errors"
+# - "Update dependencies to latest versions"
+```
+
+## Limitations
+
+- Requires Docker to be installed and running
+- First run takes a few minutes to build the Docker image
+- Internet connection required to pull base image and install copilot
+- Currently supports Linux and macOS only (uses Unix-specific user management)
+
+## Security Considerations
+
+This tool is designed for development environments. Be aware of the following:
+
+1. **Yolo Mode**: Runs Copilot in autonomous mode, which can make changes to your files without explicit confirmation
+2. **Workspace Access**: The container has read-write access to your workspace directory
+3. **Sudo Access**: The container user has passwordless sudo to install packages as needed
+4. **Credentials**: GitHub Copilot credentials are mounted to enable authentication
+5. **SSL in Corporate Environments**: The Dockerfile disables SSL verification during npm install to support corporate proxies with SSL inspection
+
+**Recommendation**: Only use this tool in trusted development environments and on code you're comfortable having an AI agent modify.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
