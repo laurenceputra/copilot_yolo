@@ -41,7 +41,7 @@ else
   if getent passwd "${TARGET_USER}" >/dev/null 2>&1; then
     TARGET_USER="copilot-${TARGET_UID}"
   fi
-  useradd -u "${TARGET_UID}" -g "${TARGET_GID}" -s /bin/sh -d "${TARGET_HOME}" "${TARGET_USER}"
+  useradd -M -u "${TARGET_UID}" -g "${TARGET_GID}" -s /bin/sh -d "${TARGET_HOME}" "${TARGET_USER}"
 fi
 
 mkdir -p "${TARGET_HOME}/.config/github-copilot" /etc/sudoers.d
