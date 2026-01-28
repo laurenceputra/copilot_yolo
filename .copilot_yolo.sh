@@ -190,6 +190,11 @@ docker_args=(
   -w "${CONTAINER_WORKDIR}"
 )
 
+# Mount ~/.copilot if it exists to use host login details
+if [[ -d "${HOME}/.copilot" ]]; then
+  docker_args+=("-v" "${HOME}/.copilot:${CONTAINER_HOME}/.copilot")
+fi
+
 if [[ -t 1 ]]; then
   docker_args+=("-t")
 fi
