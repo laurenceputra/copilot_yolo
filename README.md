@@ -4,6 +4,18 @@ A command-line tool that runs the latest GitHub Copilot CLI in Docker with Yolo 
 
 **No installation required!** Just Docker and Bash (which comes with most Unix systems).
 
+## Quick Start (One-Liner)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/copilot_yolo.sh | bash -s -- --help
+```
+
+Or to run immediately in your current directory:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yolo/main/copilot_yolo.sh | bash
+```
+
 ## Features
 
 - 🐳 Runs the latest `copilot` CLI in Docker (no local installation needed)

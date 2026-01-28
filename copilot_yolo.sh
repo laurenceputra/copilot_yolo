@@ -110,6 +110,67 @@ get_user_info() {
     USERNAME=$(whoami)
 }
 
+# Function to ensure required directories exist
+ensure_directories() {
+    # Ensure github-copilot config directory exists
+    if [[ ! -d "$HOME/.config/github-copilot" ]]; then
+        mkdir -p "$HOME/.config/github-copilot"
+        info "Created GitHub Copilot config directory: $HOME/.config/github-copilot"
+    fi
+}
+
+# Function to get the latest available copilot version from npm
+get_latest_copilot_version() {
+    local latest_version
+    latest_version=$(npm view @github/copilot version 2>/dev/null || echo "")
+    echo "$latest_version"
+}
+
+# Function to get the installed copilot version from Docker image
+get_installed_copilot_version() {
+    local installed_version
+    if check_docker_image_exists; then
+        installed_version=$(docker run --rm "$DOCKER_IMAGE" npm list -g @github/copilot --depth=0 2>/dev/null | grep @github/copilot | sed 's/.*@github\/copilot@//' | sed 's/ .*//' || echo "")
+        echo "$installed_version"
+    else
+        echo ""
+    fi
+}
+
+# Function to check if rebuild is needed due to new version
+check_version_and_rebuild() {
+    # Skip if npm is not available
+    if ! command -v npm &> /dev/null; then
+        return 0
+    fi
+    
+    local latest_version
+    local installed_version
+    
+    info "Checking for new copilot CLI version..."
+    latest_version=$(get_latest_copilot_version)
+    
+    if [[ -z "$latest_version" ]]; then
+        # Unable to check version, skip
+        return 0
+    fi
+    
+    installed_version=$(get_installed_copilot_version)
+    
+    if [[ -z "$installed_version" ]]; then
+        # No installed version, need to build
+        return 1
+    fi
+    
+    if [[ "$latest_version" != "$installed_version" ]]; then
+        info "New copilot CLI version available: $latest_version (current: $installed_version)"
+        info "Rebuilding Docker image with latest version..."
+        return 1
+    fi
+    
+    return 0
+}
+
 # Function to run copilot in Docker
 run_copilot() {
     local workspace_dir="$1"
@@ -117,6 +178,7 @@ run_copilot() {
     local additional_args=("$@")
     
     get_user_info
+    ensure_directories
     
     # Build docker command
     local docker_cmd=(
@@ -139,7 +201,7 @@ run_copilot() {
         docker_cmd+=(-v "$HOME/.ssh:/home/$USERNAME/.ssh:ro")
     fi
     
-    # Mount GitHub Copilot config directory if it exists
+    # Mount GitHub Copilot config directory (now guaranteed to exist)
     if [[ -d "$HOME/.config/github-copilot" ]]; then
         docker_cmd+=(-v "$HOME/.config/github-copilot:/home/$USERNAME/.config/github-copilot")
     fi
@@ -212,8 +274,20 @@ main() {
     fi
     workspace_dir="$(cd "$workspace_dir" && pwd)"
     
+    # Check if we need to rebuild due to version update or if rebuild flag is set
+    local need_rebuild=false
+    
+    if [[ "$rebuild" == true ]]; then
+        need_rebuild=true
+    elif ! check_docker_image_exists; then
+        need_rebuild=true
+    elif ! check_version_and_rebuild; then
+        # New version available
+        need_rebuild=true
+    fi
+    
     # Build or rebuild the Docker image if needed
-    if [[ "$rebuild" == true ]] || ! check_docker_image_exists; then
+    if [[ "$need_rebuild" == true ]]; then
         if ! build_docker_image; then
             exit 1
         fi
