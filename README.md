@@ -78,8 +78,8 @@ For headless or remote environments, use device auth or other login methods:
 copilot_yolo login --help
 ```
 
-The container mounts `~/.config/github-copilot` from your host, so credentials
-are shared between runs.
+The container mounts `~/.config/github-copilot` and `~/.copilot` (if it exists)
+from your host, so credentials are shared between runs.
 
 ## Troubleshooting
 
@@ -111,8 +111,8 @@ are shared between runs.
 ## Security note
 
 The container mounts `~/.ssh` (read-only) and `~/.gitconfig` (read-only) to enable
-Git operations with authentication. The container also has your GitHub Copilot
-credentials mounted.
+Git operations with authentication. The container also mounts `~/.config/github-copilot`
+and `~/.copilot` (if it exists) so your GitHub Copilot credentials are available.
 
 The container enables passwordless `sudo` for the mapped user to allow system
 installs. Use with care; `sudo` writes into `/workspace` have their ownership
