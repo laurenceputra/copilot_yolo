@@ -124,12 +124,20 @@ fi
 
 latest_version=""
 if [[ "${COPILOT_SKIP_VERSION_CHECK:-0}" != "1" ]]; then
+  echo "Checking for latest GitHub Copilot CLI version..."
   if command -v npm >/dev/null 2>&1; then
     latest_version="$(npm view @github/copilot version 2>/dev/null || true)"
   else
+    echo "npm not found locally, using Docker to check version..."
     latest_version="$(docker run --rm node:20-slim npm view @github/copilot version 2>/dev/null || true)"
   fi
   latest_version="$(printf '%s' "${latest_version}" | tr -d '\n')"
+  
+  if [[ -n "${latest_version}" ]]; then
+    echo "Latest GitHub Copilot CLI version: ${latest_version}"
+  else
+    echo "Warning: Unable to fetch latest version from npm registry."
+  fi
 fi
 
 if [[ -n "${latest_version}" ]]; then
@@ -142,16 +150,29 @@ if docker image inspect "${IMAGE}" >/dev/null 2>&1; then
   image_exists=1
   image_version="$(docker run --rm "${IMAGE}" cat /opt/copilot-version 2>/dev/null || true)"
   image_version="$(printf '%s' "${image_version}" | tr -d '\n')"
+  if [[ -n "${image_version}" ]]; then
+    echo "Current Docker image has GitHub Copilot CLI version: ${image_version}"
+  fi
 fi
 
 need_build=0
 if [[ "${COPILOT_BUILD_NO_CACHE:-0}" == "1" || "${COPILOT_BUILD_PULL:-0}" == "1" || "${PULL_REQUESTED}" == "1" ]]; then
   need_build=1
+  echo "Rebuild requested via flags."
 elif [[ "${image_exists}" == "0" ]]; then
   need_build=1
+  echo "Docker image not found. Building new image..."
 elif [[ -n "${latest_version}" ]]; then
   if [[ -z "${image_version}" || "${latest_version}" != "${image_version}" ]]; then
     need_build=1
+    if [[ -z "${image_version}" ]]; then
+      echo "Cannot determine current image version. Rebuilding to ensure latest version..."
+    else
+      echo "New version available: ${image_version} -> ${latest_version}"
+      echo "Rebuilding Docker image with latest GitHub Copilot CLI..."
+    fi
+  else
+    echo "Docker image is up to date with version ${image_version}"
   fi
 fi
 
@@ -221,10 +242,15 @@ fi
 
 if [[ "${need_build}" == "1" ]]; then
   if [[ -n "${latest_version}" && -n "${image_version}" && "${latest_version}" != "${image_version}" ]]; then
-    echo "Updating GitHub Copilot CLI ${image_version} -> ${latest_version}"
+    echo "Building Docker image with GitHub Copilot CLI ${latest_version}..."
+  elif [[ -n "${latest_version}" ]]; then
+    echo "Building Docker image with GitHub Copilot CLI ${latest_version}..."
+  else
+    echo "Building Docker image..."
   fi
   # Force BuildKit to avoid the legacy builder deprecation warning.
   DOCKER_BUILDKIT=1 docker build "${build_args[@]}" -t "${IMAGE}" -f "${DOCKERFILE}" "${SCRIPT_DIR}"
+  echo "Docker image built successfully!"
 fi
 
 if [[ "${#pass_args[@]}" -gt 0 && "${pass_args[0]}" == "login" ]]; then

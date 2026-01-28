@@ -41,6 +41,29 @@ copilot_yolo --help
 By default, your current repo is mounted into the container at `/workspace`,
 so make sure you run `copilot_yolo` from the repo you want Copilot to access.
 
+## Automatic Updates
+
+**copilot_yolo automatically ensures you're always using the latest GitHub Copilot CLI.**
+
+Every time you run `copilot_yolo`, it:
+1. Checks npm for the latest `@github/copilot` version
+2. Compares it with the version in your local Docker image
+3. Automatically rebuilds the image if a newer version is available
+
+This means you always get the latest features and fixes without manual intervention.
+
+To skip version checking (use existing image):
+```bash
+COPILOT_SKIP_VERSION_CHECK=1 copilot_yolo
+```
+
+To force a rebuild (even if versions match):
+```bash
+COPILOT_BUILD_NO_CACHE=1 copilot_yolo
+# or
+copilot_yolo --pull
+```
+
 ## Login
 
 The first run will prompt you to sign in. You can also log in explicitly:
