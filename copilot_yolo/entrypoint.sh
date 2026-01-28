@@ -22,7 +22,9 @@ fi
 if [ ! -d "/home/$USERNAME" ]; then
     mkdir -p /home/$USERNAME
 fi
-chown -R $USER_ID:$GROUP_ID /home/$USERNAME
+
+# Try to change ownership, but don't fail if it's read-only
+chown -R $USER_ID:$GROUP_ID /home/$USERNAME 2>/dev/null || true
 
 # Switch to the user and execute the command
 exec gosu $USER_ID:$GROUP_ID "$@"

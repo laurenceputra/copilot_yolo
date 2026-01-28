@@ -113,7 +113,7 @@ def build_docker_command(workspace_dir, additional_args=None):
     cmd.append(get_docker_image())
     
     # Add copilot command with Yolo mode
-    cmd.extend(["copilot", "--yolo"])
+    cmd.extend(["copilot", "yolo"])
     
     # Add any additional arguments
     if additional_args:
