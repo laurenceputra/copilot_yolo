@@ -15,6 +15,10 @@ BASE_IMAGE="${COPILOT_BASE_IMAGE:-node:20-slim}"
 PULL_REQUESTED=0
 REPO="${COPILOT_YOLO_REPO:-laurenceputra/copilot_yolo}"
 BRANCH="${COPILOT_YOLO_BRANCH:-main}"
+local_version=""
+if [[ -f "${SCRIPT_DIR}/VERSION" ]]; then
+  local_version="$(tr -d '\n ' < "${SCRIPT_DIR}/VERSION")"
+fi
 
 install_hint=""
 case "$(uname -s)" in
@@ -47,11 +51,6 @@ fi
 
 # Check for updates unless explicitly disabled
 if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
-  local_version=""
-  if [[ -f "${SCRIPT_DIR}/VERSION" ]]; then
-    local_version="$(cat "${SCRIPT_DIR}/VERSION" | tr -d '\n' | tr -d ' ')"
-  fi
-  
   if command -v curl >/dev/null 2>&1; then
     remote_version="$(curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/VERSION" 2>/dev/null | tr -d '\n' | tr -d ' ' || true)"
     
@@ -115,6 +114,9 @@ fi
 
 # Build the image locally (no community image pull).
 build_args=(--build-arg "BASE_IMAGE=${BASE_IMAGE}")
+if [[ -n "${local_version}" ]]; then
+  build_args+=(--build-arg "COPILOT_YOLO_VERSION=${local_version}")
+fi
 if [[ "${COPILOT_BUILD_NO_CACHE:-0}" == "1" ]]; then
   build_args+=(--no-cache)
 fi
@@ -146,12 +148,18 @@ fi
 
 image_exists=0
 image_version=""
+image_yolo_version=""
 if docker image inspect "${IMAGE}" >/dev/null 2>&1; then
   image_exists=1
   image_version="$(docker run --rm "${IMAGE}" cat /opt/copilot-version 2>/dev/null || true)"
   image_version="$(printf '%s' "${image_version}" | tr -d '\n')"
   if [[ -n "${image_version}" ]]; then
     echo "Current Docker image has GitHub Copilot CLI version: ${image_version}"
+  fi
+  image_yolo_version="$(docker run --rm "${IMAGE}" cat /opt/copilot-yolo-version 2>/dev/null || true)"
+  image_yolo_version="$(printf '%s' "${image_yolo_version}" | tr -d '\n')"
+  if [[ -n "${image_yolo_version}" ]]; then
+    echo "Current Docker image has copilot_yolo version: ${image_yolo_version}"
   fi
 fi
 
@@ -162,6 +170,16 @@ if [[ "${COPILOT_BUILD_NO_CACHE:-0}" == "1" || "${COPILOT_BUILD_PULL:-0}" == "1"
 elif [[ "${image_exists}" == "0" ]]; then
   need_build=1
   echo "Docker image not found. Building new image..."
+elif [[ -n "${local_version}" ]]; then
+  if [[ -z "${image_yolo_version}" || "${local_version}" != "${image_yolo_version}" ]]; then
+    need_build=1
+    if [[ -z "${image_yolo_version}" ]]; then
+      echo "Cannot determine current copilot_yolo image version. Rebuilding to ensure latest version..."
+    else
+      echo "copilot_yolo version changed: ${image_yolo_version} -> ${local_version}"
+      echo "Rebuilding Docker image to match copilot_yolo version..."
+    fi
+  fi
 elif [[ -n "${latest_version}" ]]; then
   if [[ -z "${image_version}" || "${latest_version}" != "${image_version}" ]]; then
     need_build=1

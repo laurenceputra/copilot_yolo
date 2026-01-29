@@ -70,6 +70,7 @@ Every time you run `copilot_yolo`, it:
 1. Checks npm for the latest `@github/copilot` version
 2. Compares it with the version in your local Docker image
 3. Automatically rebuilds the image if a newer version is available
+4. Rebuilds the image if the local `copilot_yolo` VERSION changes
 
 This means you always get the latest features and fixes without manual intervention.
 
@@ -126,6 +127,7 @@ are shared between runs.
 - `--pull` flag to force a pull when running `./.copilot_yolo.sh`
 - Each run checks npm for the latest `@github/copilot` version (unless skipped)
   and rebuilds the image if it is out of date.
+- The image also rebuilds when the local `copilot_yolo` VERSION changes.
 - Each run checks for copilot_yolo script updates (unless skipped with `COPILOT_SKIP_UPDATE_CHECK=1`)
   and auto-updates if a new version is available.
 
