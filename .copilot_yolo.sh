@@ -194,6 +194,12 @@ if [[ -d "${HOME}/.copilot" ]]; then
   docker_args+=("-v" "${HOME}/.copilot:${CONTAINER_HOME}/.copilot")
 fi
 
+# Mount gh config if it exists to use host authentication
+host_gh_config="${XDG_CONFIG_HOME:-$HOME/.config}/gh"
+if [[ -d "${host_gh_config}" ]]; then
+  docker_args+=("-v" "${host_gh_config}:${CONTAINER_HOME}/.config/gh")
+fi
+
 if [[ -t 1 ]]; then
   docker_args+=("-t")
 fi
