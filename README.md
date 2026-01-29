@@ -1,7 +1,8 @@
 # copilot_yolo
 
 Run the GitHub Copilot CLI in a disposable Docker container with your current
-repo mounted. The script builds a local image and starts Copilot with yolo mode.
+repo mounted. The script builds a local image and starts Copilot with yolo mode,
+including GitHub CLI (`gh`) preinstalled for PR workflows.
 Only the current directory is mounted into the container by default, so other
 host paths are not visible unless you add additional mounts.
 
@@ -49,6 +50,7 @@ The container automatically mounts the following paths from your host system:
 |-----------|---------------|------|---------|
 | Current directory (`$(pwd)`) | `/workspace` | Read-write | Your working repository/project files |
 | `~/.copilot` | `/home/copilot/.copilot` | Read-write | Copilot CLI configuration and credentials (if directory exists) |
+| `~/.config/gh` | `/home/copilot/.config/gh` | Read-write | GitHub CLI authentication (if directory exists; uses `XDG_CONFIG_HOME` when set) |
 | `~/.gitconfig` | `/home/copilot/.gitconfig` | Read-only | Git configuration for authentication (if file exists) |
 
 **Notes:**
@@ -56,6 +58,7 @@ The container automatically mounts the following paths from your host system:
 - Only files within the current directory are visible to the container
 - Git config is mounted read-only for security
 - Copilot configuration is shared between runs via `~/.copilot`
+- GitHub CLI config is shared from `~/.config/gh` (or `$XDG_CONFIG_HOME/gh`)
 - All file modifications in `/workspace` are immediately reflected on your host system
 - SSH keys are NOT mounted to reduce security blast radius
 
