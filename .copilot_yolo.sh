@@ -363,6 +363,13 @@ if [[ "${mount_ssh}" == "1" ]]; then
   fi
 fi
 
+# Build copilot command based on arguments
+copilot_cmd=(copilot)
+if [[ "${#pass_args[@]}" -eq 0 || "${pass_args[0]}" != "login" ]]; then
+  copilot_cmd+=(--yolo)
+fi
+copilot_cmd+=("${pass_args[@]}")
+
 if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then
   if [[ "${need_build}" == "1" ]]; then
     echo "Dry run: would build image with:"
@@ -373,14 +380,7 @@ if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then
 
   echo "Dry run: would run:"
   printf 'docker run %q ' "${docker_args[@]}"
-  printf '%q ' "${IMAGE}"
-  if [[ "${#pass_args[@]}" -gt 0 && "${pass_args[0]}" == "login" ]]; then
-    printf 'copilot '
-    printf '%q ' "${pass_args[@]}"
-  else
-    printf 'copilot --yolo '
-    printf '%q ' "${pass_args[@]}"
-  fi
+  printf '%q ' "${IMAGE}" "${copilot_cmd[@]}"
   printf '\n'
   exit 0
 fi
@@ -409,8 +409,4 @@ if [[ "${need_build}" == "1" ]]; then
   echo "Docker image built successfully!"
 fi
 
-if [[ "${#pass_args[@]}" -gt 0 && "${pass_args[0]}" == "login" ]]; then
-  docker run "${docker_args[@]}" "${IMAGE}" copilot "${pass_args[@]}"
-else
-  docker run "${docker_args[@]}" "${IMAGE}" copilot --yolo "${pass_args[@]}"
-fi
+docker run "${docker_args[@]}" "${IMAGE}" "${copilot_cmd[@]}"
