@@ -210,13 +210,13 @@ Edit the configuration file to customize:
   and auto-updates if a new version is available.
 
 ## Troubleshooting
-## Troubleshooting
 
 - **Run health check first:** `copilot_yolo health` will diagnose common issues
 - **Docker not found / daemon not running:** install Docker and start the Docker
   service, then re-run `copilot_yolo` (see Requirements above for links).
 - **Files missing inside the container:** only the current directory is mounted
   by default. Run `copilot_yolo` from the repo you want to work on.
+- **For developers:** See [TECHNICAL.md](TECHNICAL.md) for architecture details and debugging guidance.
 
 ## Security note
 
@@ -263,7 +263,7 @@ copilot_yolo --pull
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and [TECHNICAL.md](TECHNICAL.md) for architecture and implementation details.
 
 ## License
 
