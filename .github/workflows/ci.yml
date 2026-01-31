@@ -20,7 +20,7 @@ jobs:
           scandir: '.'
           severity: warning
           format: gcc
-          additional_files: '.copilot_yolo.sh .copilot_yolo_entrypoint.sh .copilot_yolo_config.sh .copilot_yolo_logging.sh install.sh'
+          additional_files: '.copilot_yolo.sh .copilot_yolo_entrypoint.sh .copilot_yolo_config.sh install.sh'
 
   test-docker-build:
     name: Test Docker Build
@@ -121,6 +121,44 @@ jobs:
           fi
           
           echo "✓ Config generation test passed"
+
+  test-dry-run:
+    name: Test Dry Run Mode
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test Dry Run Output
+        run: |
+          set -e
+          # Test dry run mode
+          output=$(COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_DRY_RUN=1 ./.copilot_yolo.sh --help 2>&1)
+          
+          # Verify dry run produces expected output
+          if ! echo "$output" | grep -q "Dry run: would build image with:"; then
+            echo "Error: Dry run output missing build message"
+            exit 1
+          fi
+          
+          if ! echo "$output" | grep -q "Dry run: would run:"; then
+            echo "Error: Dry run output missing run message"
+            exit 1
+          fi
+          
+          if ! echo "$output" | grep -q "docker run"; then
+            echo "Error: Dry run output missing docker run command"
+            exit 1
+          fi
+          
+          if ! echo "$output" | grep -q "copilot --yolo --help"; then
+            echo "Error: Dry run output missing copilot command"
+            exit 1
+          fi
+          
+          echo "✓ Dry run test passed"
+          echo ""
+          echo "=== Dry run output ==="
+          echo "$output"
 
   validate-version:
     name: Validate VERSION File

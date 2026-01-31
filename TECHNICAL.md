@@ -13,7 +13,6 @@ This document provides technical details for developers contributing to or maint
 .copilot_yolo.Dockerfile      Container image definition
 .copilot_yolo_entrypoint.sh   Container initialization
 .copilot_yolo_config.sh       Configuration management module
-.copilot_yolo_logging.sh      Logging utilities module
 .copilot_yolo_completion.bash Bash shell completions
 .copilot_yolo_completion.zsh  Zsh shell completions
 install.sh                    Installation script
@@ -23,7 +22,6 @@ install.sh                    Installation script
 
 - **Main Script** (`.copilot_yolo.sh`): Handles auto-updates, argument parsing, Docker operations, version checks
 - **Configuration Module** (`.copilot_yolo_config.sh`): Loads config files, generates sample configs
-- **Logging Module** (`.copilot_yolo_logging.sh`): Structured logging with levels (DEBUG, INFO, WARN, ERROR)
 - **Entrypoint** (`.copilot_yolo_entrypoint.sh`): Container user setup, permission management, cleanup
 
 ---
@@ -32,40 +30,56 @@ install.sh                    Installation script
 
 ### Design Philosophy
 
-The auto-update system uses a **three-phase download strategy** to ensure backward and forward compatibility.
+The auto-update system uses a **helper function** to download files and loops to copy them, ensuring backward and forward compatibility.
 
-### Implementation (`.copilot_yolo.sh`, lines 72-95)
+### Implementation (`.copilot_yolo.sh`, lines 72-105)
 
-#### Phase 1: Core Files (Required)
+#### Phase 1: Helper Function
 ```bash
-if curl -fsSL ... .copilot_yolo.sh && \
-   curl -fsSL ... .copilot_yolo.Dockerfile && \
-   curl -fsSL ... .copilot_yolo_entrypoint.sh && \
-   curl -fsSL ... VERSION; then
+download_file() {
+  local file="$1"
+  local required="${2:-false}"
+  if curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file}" -o "${temp_dir}/${file}" 2>/dev/null; then
+    return 0
+  elif [[ "${required}" == "true" ]]; then
+    return 1
+  fi
+  return 0
+}
+```
+
+A simple helper that returns an error only if a required file fails to download.
+
+#### Phase 2: Download Required Files
+```bash
+if download_file ".copilot_yolo.sh" true && \
+   download_file ".copilot_yolo.Dockerfile" true && \
+   download_file ".copilot_yolo_entrypoint.sh" true && \
+   download_file "VERSION" true; then
 ```
 
 These files must download successfully or the update fails.
 
-#### Phase 2: Module Files (Optional, Non-Fatal)
+#### Phase 3: Download Optional Files (Non-Fatal)
 ```bash
-# Download optional/new files (non-fatal if they don't exist)
-curl -fsSL ... .dockerignore 2>/dev/null || true
-curl -fsSL ... .copilot_yolo_config.sh 2>/dev/null || true
-curl -fsSL ... .copilot_yolo_logging.sh 2>/dev/null || true
-curl -fsSL ... .copilot_yolo_completion.bash 2>/dev/null || true
-curl -fsSL ... .copilot_yolo_completion.zsh 2>/dev/null || true
+download_file ".dockerignore"
+download_file ".copilot_yolo_config.sh"
+download_file ".copilot_yolo_completion.bash"
+download_file ".copilot_yolo_completion.zsh"
 ```
 
-- `2>/dev/null` suppresses 404 errors
-- `|| true` ensures the script continues even if downloads fail
-- Allows updates from older versions that don't have these files
+Optional files are downloaded but failures are ignored (no `true` flag).
 
-#### Phase 3: Conditional Copying
+#### Phase 4: Copy Downloaded Files
 ```bash
-[[ -f "${temp_dir}/.copilot_yolo_config.sh" ]] && cp ...
-[[ -f "${temp_dir}/.copilot_yolo_logging.sh" ]] && cp ...
-[[ -f "${temp_dir}/.copilot_yolo_completion.bash" ]] && cp ...
-[[ -f "${temp_dir}/.copilot_yolo_completion.zsh" ]] && cp ...
+# Required files
+for file in .copilot_yolo.sh .copilot_yolo.Dockerfile .copilot_yolo_entrypoint.sh VERSION; do
+  [[ -f "${temp_dir}/${file}" ]] && cp "${temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
+done
+# Optional files
+for file in .dockerignore .copilot_yolo_config.sh .copilot_yolo_completion.bash .copilot_yolo_completion.zsh; do
+  [[ -f "${temp_dir}/${file}" ]] && cp "${temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
+done
 ```
 
 Only copies files that successfully downloaded.
@@ -362,24 +376,6 @@ generate_sample_config() {
 }
 ```
 
-### Logging Module (`.copilot_yolo_logging.sh`)
-
-```bash
-#!/usr/bin/env bash
-# Logging utilities for copilot_yolo
-
-LOG_LEVEL_DEBUG=0
-LOG_LEVEL_INFO=1
-LOG_LEVEL_WARN=2
-LOG_LEVEL_ERROR=3
-
-log_debug() { ... }
-log_info() { ... }
-log_warn() { ... }
-log_error() { ... }
-handle_error() { ... }
-```
-
 ---
 
 ## Debugging
@@ -389,12 +385,6 @@ handle_error() { ... }
 ```bash
 # Bash trace mode
 bash -x .copilot_yolo.sh
-
-# Debug logging
-export COPILOT_LOG_LEVEL=0
-export COPILOT_LOG_FILE=/tmp/copilot_debug.log
-./copilot_yolo.sh
-tail -f /tmp/copilot_debug.log
 ```
 
 ### Common Issues

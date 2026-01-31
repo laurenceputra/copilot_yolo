@@ -20,7 +20,6 @@ chmod +x .copilot_yolo.sh
    - `.copilot_yolo.Dockerfile` - Docker image definition
    - `.copilot_yolo_entrypoint.sh` - Container entrypoint script
    - `.copilot_yolo_config.sh` - Configuration module
-   - `.copilot_yolo_logging.sh` - Logging module
    - `.copilot_yolo_completion.bash` / `.copilot_yolo_completion.zsh` - Shell completions
    - `README.md` - User documentation
    - `TECHNICAL.md` - Technical documentation

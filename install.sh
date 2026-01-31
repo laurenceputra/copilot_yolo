@@ -118,15 +118,16 @@ profile_path="$(detect_profile)"
 
 mkdir -p "${INSTALL_DIR}"
 
-curl -fsSL "${raw_base}/.copilot_yolo.sh" -o "${INSTALL_DIR}/.copilot_yolo.sh"
-curl -fsSL "${raw_base}/.copilot_yolo.Dockerfile" -o "${INSTALL_DIR}/.copilot_yolo.Dockerfile"
-curl -fsSL "${raw_base}/.copilot_yolo_entrypoint.sh" -o "${INSTALL_DIR}/.copilot_yolo_entrypoint.sh"
-curl -fsSL "${raw_base}/.copilot_yolo_config.sh" -o "${INSTALL_DIR}/.copilot_yolo_config.sh" 2>/dev/null || true
-curl -fsSL "${raw_base}/.copilot_yolo_logging.sh" -o "${INSTALL_DIR}/.copilot_yolo_logging.sh" 2>/dev/null || true
-curl -fsSL "${raw_base}/.dockerignore" -o "${INSTALL_DIR}/.dockerignore" 2>/dev/null || true
-curl -fsSL "${raw_base}/.copilot_yolo_completion.bash" -o "${INSTALL_DIR}/.copilot_yolo_completion.bash" 2>/dev/null || true
-curl -fsSL "${raw_base}/.copilot_yolo_completion.zsh" -o "${INSTALL_DIR}/.copilot_yolo_completion.zsh" 2>/dev/null || true
-curl -fsSL "${raw_base}/VERSION" -o "${INSTALL_DIR}/VERSION"
+# Download files with a simple loop
+for file in .copilot_yolo.sh .copilot_yolo.Dockerfile .copilot_yolo_entrypoint.sh VERSION; do
+  curl -fsSL "${raw_base}/${file}" -o "${INSTALL_DIR}/${file}"
+done
+
+# Download optional files (non-fatal)
+for file in .copilot_yolo_config.sh .dockerignore .copilot_yolo_completion.bash .copilot_yolo_completion.zsh; do
+  curl -fsSL "${raw_base}/${file}" -o "${INSTALL_DIR}/${file}" 2>/dev/null || true
+done
+
 chmod +x "${INSTALL_DIR}/.copilot_yolo.sh"
 
 cat > "${INSTALL_DIR}/env" <<EOF

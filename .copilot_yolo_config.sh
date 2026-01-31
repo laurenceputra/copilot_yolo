@@ -48,14 +48,6 @@ generate_sample_config() {
 # Repository (for updates)
 # COPILOT_YOLO_REPO="laurenceputra/copilot_yolo"
 # COPILOT_YOLO_BRANCH="main"
-
-# Logging (requires logging support)
-# COPILOT_LOG_LEVEL="1"  # 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR
-# COPILOT_LOG_FILE="${HOME}/.copilot_yolo/logs/copilot_yolo.log"
-
-# Custom Docker arguments (advanced)
-# Add any custom docker run arguments
-# COPILOT_DOCKER_EXTRA_ARGS=("-e" "MY_VAR=value" "-v" "/host/path:/container/path")
 EOF
   
   echo "Sample configuration generated at: ${output_file}"

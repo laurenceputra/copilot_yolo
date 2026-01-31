@@ -69,30 +69,40 @@ if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
       temp_dir="$(mktemp -d)"
       trap 'rm -rf "${temp_dir}"' EXIT
       
-      if curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo.sh" -o "${temp_dir}/.copilot_yolo.sh" && \
-         curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo.Dockerfile" -o "${temp_dir}/.copilot_yolo.Dockerfile" && \
-         curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_entrypoint.sh" -o "${temp_dir}/.copilot_yolo_entrypoint.sh" && \
-         curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/VERSION" -o "${temp_dir}/VERSION"; then
+      # Download files with a simple helper
+      download_file() {
+        local file="$1"
+        local required="${2:-false}"
+        if curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file}" -o "${temp_dir}/${file}" 2>/dev/null; then
+          return 0
+        elif [[ "${required}" == "true" ]]; then
+          return 1
+        fi
+        return 0
+      }
+      
+      # Download required files
+      if download_file ".copilot_yolo.sh" true && \
+         download_file ".copilot_yolo.Dockerfile" true && \
+         download_file ".copilot_yolo_entrypoint.sh" true && \
+         download_file "VERSION" true; then
         
-        # Download optional/new files (non-fatal if they don't exist)
-        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.dockerignore" -o "${temp_dir}/.dockerignore" 2>/dev/null || true
-        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_config.sh" -o "${temp_dir}/.copilot_yolo_config.sh" 2>/dev/null || true
-        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_logging.sh" -o "${temp_dir}/.copilot_yolo_logging.sh" 2>/dev/null || true
-        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_completion.bash" -o "${temp_dir}/.copilot_yolo_completion.bash" 2>/dev/null || true
-        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_completion.zsh" -o "${temp_dir}/.copilot_yolo_completion.zsh" 2>/dev/null || true
+        # Download optional files (non-fatal)
+        download_file ".dockerignore"
+        download_file ".copilot_yolo_config.sh"
+        download_file ".copilot_yolo_completion.bash"
+        download_file ".copilot_yolo_completion.zsh"
         
+        # Copy all downloaded files
         chmod +x "${temp_dir}/.copilot_yolo.sh"
-        cp "${temp_dir}/.copilot_yolo.sh" "${SCRIPT_DIR}/.copilot_yolo.sh"
-        cp "${temp_dir}/.copilot_yolo.Dockerfile" "${SCRIPT_DIR}/.copilot_yolo.Dockerfile"
-        cp "${temp_dir}/.copilot_yolo_entrypoint.sh" "${SCRIPT_DIR}/.copilot_yolo_entrypoint.sh"
-        cp "${temp_dir}/VERSION" "${SCRIPT_DIR}/VERSION"
-        
-        # Copy optional files if they were downloaded successfully
-        [[ -f "${temp_dir}/.dockerignore" ]] && cp "${temp_dir}/.dockerignore" "${SCRIPT_DIR}/.dockerignore"
-        [[ -f "${temp_dir}/.copilot_yolo_config.sh" ]] && cp "${temp_dir}/.copilot_yolo_config.sh" "${SCRIPT_DIR}/.copilot_yolo_config.sh"
-        [[ -f "${temp_dir}/.copilot_yolo_logging.sh" ]] && cp "${temp_dir}/.copilot_yolo_logging.sh" "${SCRIPT_DIR}/.copilot_yolo_logging.sh"
-        [[ -f "${temp_dir}/.copilot_yolo_completion.bash" ]] && cp "${temp_dir}/.copilot_yolo_completion.bash" "${SCRIPT_DIR}/.copilot_yolo_completion.bash"
-        [[ -f "${temp_dir}/.copilot_yolo_completion.zsh" ]] && cp "${temp_dir}/.copilot_yolo_completion.zsh" "${SCRIPT_DIR}/.copilot_yolo_completion.zsh"
+        # Required files
+        for file in .copilot_yolo.sh .copilot_yolo.Dockerfile .copilot_yolo_entrypoint.sh VERSION; do
+          [[ -f "${temp_dir}/${file}" ]] && cp "${temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
+        done
+        # Optional files
+        for file in .dockerignore .copilot_yolo_config.sh .copilot_yolo_completion.bash .copilot_yolo_completion.zsh; do
+          [[ -f "${temp_dir}/${file}" ]] && cp "${temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
+        done
         
         echo "Updated to version ${remote_version}"
         echo "Re-executing with new version..."
@@ -355,24 +365,26 @@ if [[ "${mount_ssh}" == "1" ]]; then
   fi
 fi
 
+# Build copilot command based on arguments
+copilot_cmd=(copilot)
+if [[ "${#pass_args[@]}" -eq 0 || "${pass_args[0]}" != "login" ]]; then
+  copilot_cmd+=(--yolo)
+fi
+copilot_cmd+=("${pass_args[@]}")
+
 if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then
   if [[ "${need_build}" == "1" ]]; then
     echo "Dry run: would build image with:"
-    printf 'DOCKER_BUILDKIT=1 docker build %q ' "${build_args[@]}"
-    printf '%q ' "-t" "${IMAGE}" "-f" "${DOCKERFILE}" "${SCRIPT_DIR}"
-    printf '\n'
+    printf 'DOCKER_BUILDKIT=1 docker build'
+    printf ' %q' "${build_args[@]}"
+    printf ' -t %q -f %q %q\n' "${IMAGE}" "${DOCKERFILE}" "${SCRIPT_DIR}"
   fi
 
   echo "Dry run: would run:"
-  printf 'docker run %q ' "${docker_args[@]}"
-  printf '%q ' "${IMAGE}"
-  if [[ "${#pass_args[@]}" -gt 0 && "${pass_args[0]}" == "login" ]]; then
-    printf 'copilot '
-    printf '%q ' "${pass_args[@]}"
-  else
-    printf 'copilot --yolo '
-    printf '%q ' "${pass_args[@]}"
-  fi
+  printf 'docker run'
+  printf ' %q' "${docker_args[@]}"
+  printf ' %q' "${IMAGE}"
+  printf ' %q' "${copilot_cmd[@]}"
   printf '\n'
   exit 0
 fi
@@ -401,8 +413,4 @@ if [[ "${need_build}" == "1" ]]; then
   echo "Docker image built successfully!"
 fi
 
-if [[ "${#pass_args[@]}" -gt 0 && "${pass_args[0]}" == "login" ]]; then
-  docker run "${docker_args[@]}" "${IMAGE}" copilot "${pass_args[@]}"
-else
-  docker run "${docker_args[@]}" "${IMAGE}" copilot --yolo "${pass_args[@]}"
-fi
+docker run "${docker_args[@]}" "${IMAGE}" "${copilot_cmd[@]}"
