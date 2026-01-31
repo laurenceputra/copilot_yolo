@@ -263,19 +263,6 @@ if [[ -f "${HOME}/.gitconfig" ]]; then
   docker_args+=("-v" "${HOME}/.gitconfig:${CONTAINER_HOME}/.gitconfig:ro")
 fi
 
-# Mount SSH directory if requested (with security warning)
-if [[ "${mount_ssh}" == "1" ]]; then
-  if [[ -d "${HOME}/.ssh" ]]; then
-    echo "⚠️  WARNING: Mounting SSH keys into the container!"
-    echo "⚠️  Please ensure you have proper branch protection rules in place."
-    echo "⚠️  Protect critical branches (main, master, production) to prevent accidental pushes."
-    echo ""
-    docker_args+=("-v" "${HOME}/.ssh:${CONTAINER_HOME}/.ssh:ro")
-  else
-    echo "Warning: --mount-ssh specified but ~/.ssh directory not found"
-  fi
-fi
-
 # Generate config command
 if [[ "${generate_config}" == "1" ]]; then
   if [[ -f "${SCRIPT_DIR}/.copilot_yolo_config.sh" ]]; then
@@ -353,6 +340,19 @@ if [[ "${run_health_check}" == "1" ]]; then
   fi
   
   exit 0
+fi
+
+# Mount SSH directory if requested (with security warning)
+if [[ "${mount_ssh}" == "1" ]]; then
+  if [[ -d "${HOME}/.ssh" ]]; then
+    echo "⚠ WARNING: Mounting SSH keys into the container!"
+    echo "⚠ Please ensure you have proper branch protection rules in place."
+    echo "⚠ Protect critical branches (main, master, production) to prevent accidental pushes."
+    echo ""
+    docker_args+=("-v" "${HOME}/.ssh:${CONTAINER_HOME}/.ssh:ro")
+  else
+    echo "Warning: --mount-ssh specified but ~/.ssh directory not found"
+  fi
 fi
 
 if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then
