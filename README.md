@@ -81,6 +81,7 @@ The container automatically mounts the following paths from your host system:
 | `~/.copilot` | `/home/copilot/.copilot` | Read-write | Copilot CLI configuration and credentials (if directory exists) |
 | `~/.config/gh` | `/home/copilot/.config/gh` | Read-write | GitHub CLI authentication (if directory exists; uses `XDG_CONFIG_HOME` when set) |
 | `~/.gitconfig` | `/home/copilot/.gitconfig` | Read-only | Git configuration for authentication (if file exists) |
+| `~/.ssh` (optional) | `/home/copilot/.ssh` | Read-only | SSH keys for Git operations (requires `--mount-ssh` flag) |
 
 **Notes:**
 - The working directory mount is always at `/workspace` by default (configurable via `COPILOT_YOLO_WORKDIR`)
@@ -89,7 +90,8 @@ The container automatically mounts the following paths from your host system:
 - Copilot configuration is shared between runs via `~/.copilot`
 - GitHub CLI config is shared from `~/.config/gh` (or `$XDG_CONFIG_HOME/gh`)
 - All file modifications in `/workspace` are immediately reflected on your host system
-- SSH keys are NOT mounted to reduce security blast radius
+- SSH keys are NOT mounted by default to reduce security blast radius
+- Use `--mount-ssh` flag to enable SSH key mounting when you need Git operations via SSH
 
 ## Automatic Updates
 
@@ -183,6 +185,7 @@ Edit the configuration file to customize:
 - `COPILOT_LOG_LEVEL` (default: `1`) for logging verbosity: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR
 - `COPILOT_LOG_FILE` path to log file (logging to file disabled by default)
 - `--pull` flag to force a pull when running `./.copilot_yolo.sh`
+- `--mount-ssh` flag to mount `~/.ssh` directory (read-only) for Git operations via SSH
 - `health` or `--health` to run system diagnostics
 - `config` to generate a sample configuration file
 
@@ -208,9 +211,20 @@ The container mounts `~/.gitconfig` (read-only) to enable Git operations with
 authentication. The container also mounts `~/.copilot` (if it exists) so your 
 GitHub Copilot CLI configuration and credentials are available.
 
-**Important:** SSH keys (`~/.ssh`) are NOT mounted to reduce the security blast 
-radius. If you need SSH access for Git operations, consider using HTTPS with 
-credential helpers or Git credential manager instead.
+**Important:** SSH keys (`~/.ssh`) are NOT mounted by default to reduce the 
+security blast radius. If you need SSH access for Git operations (e.g., to allow 
+agents to git push), you can use the `--mount-ssh` flag:
+
+```bash
+copilot_yolo --mount-ssh
+```
+
+**Security Warning:** When using `--mount-ssh`, ensure you have proper branch 
+protection rules configured in your repositories to prevent accidental or 
+unauthorized pushes to critical branches (main, master, production, etc.).
+
+Alternatively, consider using HTTPS with credential helpers or Git credential 
+manager instead of SSH keys.
 
 The container enables passwordless `sudo` for the mapped user to allow system
 installs. Use with care; `sudo` writes into `/workspace` have their ownership

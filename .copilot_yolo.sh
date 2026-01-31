@@ -112,6 +112,7 @@ fi
 pass_args=()
 run_health_check=0
 generate_config=0
+mount_ssh=0
 
 # Parse arguments
 for arg in "$@"; do
@@ -124,6 +125,9 @@ for arg in "$@"; do
       ;;
     config|--generate-config)
       generate_config=1
+      ;;
+    --mount-ssh)
+      mount_ssh=1
       ;;
     *)
       pass_args+=("${arg}")
@@ -259,6 +263,19 @@ if [[ -f "${HOME}/.gitconfig" ]]; then
   docker_args+=("-v" "${HOME}/.gitconfig:${CONTAINER_HOME}/.gitconfig:ro")
 fi
 
+# Mount SSH directory if requested (with security warning)
+if [[ "${mount_ssh}" == "1" ]]; then
+  if [[ -d "${HOME}/.ssh" ]]; then
+    echo "⚠️  WARNING: Mounting SSH keys into the container!"
+    echo "⚠️  Please ensure you have proper branch protection rules in place."
+    echo "⚠️  Protect critical branches (main, master, production) to prevent accidental pushes."
+    echo ""
+    docker_args+=("-v" "${HOME}/.ssh:${CONTAINER_HOME}/.ssh:ro")
+  else
+    echo "Warning: --mount-ssh specified but ~/.ssh directory not found"
+  fi
+fi
+
 # Generate config command
 if [[ "${generate_config}" == "1" ]]; then
   if [[ -f "${SCRIPT_DIR}/.copilot_yolo_config.sh" ]]; then
@@ -321,6 +338,7 @@ if [[ "${run_health_check}" == "1" ]]; then
   [[ -d "${HOME}/.copilot" ]] && echo "✓ ~/.copilot (credentials)" || echo "⚠ ~/.copilot not found (will need to login)"
   [[ -d "${host_gh_config}" ]] && echo "✓ ${host_gh_config} (gh CLI auth)" || echo "⚠ gh config not found"
   [[ -f "${HOME}/.gitconfig" ]] && echo "✓ ~/.gitconfig (git config)" || echo "⚠ ~/.gitconfig not found"
+  [[ -d "${HOME}/.ssh" ]] && echo "⚠ ~/.ssh available (use --mount-ssh to enable, with caution)" || echo "⚠ ~/.ssh not found"
   
   echo ""
   echo "=== Status ==="
