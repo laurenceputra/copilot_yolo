@@ -175,7 +175,7 @@ esac
 COPILOT_SKIP_UPDATE_CHECK=1 ./copilot_yolo.sh health
 
 # Test config generation
-COPILOT_SKIP_UPDATE_CHECK=1 ./copilot_yolo.sh config /tmp/test.conf
+COPILOT_SKIP_UPDATE_CHECK=1 ./copilot_yolo.sh config
 
 # Test dry run
 COPILOT_DRY_RUN=1 ./copilot_yolo.sh

@@ -100,16 +100,27 @@ jobs:
       
       - name: Generate Sample Config
         run: |
-          TEST_DIR=$(mktemp -d)
-          COPILOT_SKIP_UPDATE_CHECK=1 \
-            ./.copilot_yolo.sh config "${TEST_DIR}/test.conf"
+          set -e
+          # Generate config in installation directory
+          COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_SKIP_VERSION_CHECK=1 \
+            ./.copilot_yolo.sh config
           
-          # Verify config was generated
-          test -f "${TEST_DIR}/test.conf"
-          cat "${TEST_DIR}/test.conf"
+          # Verify config was generated in the script directory
+          if [ ! -f ./.copilot_yolo.conf ]; then
+            echo "Error: Config file not generated"
+            exit 1
+          fi
           
-          # Clean up
-          rm -rf "${TEST_DIR}"
+          # Display and verify content
+          cat ./.copilot_yolo.conf
+          
+          # Verify it has expected content
+          if ! grep -q "copilot_yolo configuration file" ./.copilot_yolo.conf; then
+            echo "Error: Config file has unexpected content"
+            exit 1
+          fi
+          
+          echo "✓ Config generation test passed"
 
   validate-version:
     name: Validate VERSION File

@@ -83,7 +83,7 @@ Before submitting a PR, test:
 2. ShellCheck: `shellcheck .copilot_yolo.sh`
 3. Fresh Docker build: `COPILOT_BUILD_NO_CACHE=1 ./.copilot_yolo.sh`
 4. Health check: `./.copilot_yolo.sh health`
-5. Config generation: `./.copilot_yolo.sh config /tmp/test.conf`
+5. Config generation: `./.copilot_yolo.sh config`
 6. Running in different directories
 7. Help output: `./.copilot_yolo.sh --help`
 

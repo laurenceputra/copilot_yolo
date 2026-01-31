@@ -8,7 +8,7 @@ _copilot_yolo_completions() {
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   
   # copilot_yolo specific options
-  local yolo_opts="--pull health --health"
+  local yolo_opts="--pull health --health config --generate-config"
   
   # Common copilot CLI commands
   local copilot_cmds="login logout status explain review test describe"

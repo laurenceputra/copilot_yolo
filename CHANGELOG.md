@@ -56,7 +56,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added sections for health check, shell completions, and configuration
 - Improved troubleshooting section with health check recommendation
 - Added comprehensive configuration documentation
-- Added CHANGES_EXPLAINED.md with detailed explanation of all changes
 
 ## [1.0.3] - Previous Release
 

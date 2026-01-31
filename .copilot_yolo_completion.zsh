@@ -9,6 +9,8 @@ _copilot_yolo() {
     '--pull[Force pull base image when building]'
     'health[Run health check diagnostics]'
     '--health[Run health check diagnostics]'
+    'config[Generate sample configuration file]'
+    '--generate-config[Generate sample configuration file]'
   )
   
   copilot_cmds=(
