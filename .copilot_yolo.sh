@@ -338,7 +338,11 @@ if [[ "${run_health_check}" == "1" ]]; then
   [[ -d "${HOME}/.copilot" ]] && echo "✓ ~/.copilot (credentials)" || echo "⚠ ~/.copilot not found (will need to login)"
   [[ -d "${host_gh_config}" ]] && echo "✓ ${host_gh_config} (gh CLI auth)" || echo "⚠ gh config not found"
   [[ -f "${HOME}/.gitconfig" ]] && echo "✓ ~/.gitconfig (git config)" || echo "⚠ ~/.gitconfig not found"
-  [[ -d "${HOME}/.ssh" ]] && echo "⚠ ~/.ssh available (use --mount-ssh to enable, with caution)" || echo "⚠ ~/.ssh not found"
+  if [[ -d "${HOME}/.ssh" ]]; then
+    echo "✓ ~/.ssh available (use --mount-ssh to enable, with caution)"
+  else
+    echo "⚠ ~/.ssh not found"
+  fi
   
   echo ""
   echo "=== Status ==="
