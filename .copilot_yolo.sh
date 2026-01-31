@@ -90,14 +90,13 @@ if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
         # Download optional files (non-fatal)
         download_file ".dockerignore"
         download_file ".copilot_yolo_config.sh"
-        download_file ".copilot_yolo_logging.sh"
         download_file ".copilot_yolo_completion.bash"
         download_file ".copilot_yolo_completion.zsh"
         
         # Copy all downloaded files
         chmod +x "${temp_dir}/.copilot_yolo.sh"
         for file in .copilot_yolo.sh .copilot_yolo.Dockerfile .copilot_yolo_entrypoint.sh VERSION \
-                    .dockerignore .copilot_yolo_config.sh .copilot_yolo_logging.sh \
+                    .dockerignore .copilot_yolo_config.sh \
                     .copilot_yolo_completion.bash .copilot_yolo_completion.zsh; do
           [[ -f "${temp_dir}/${file}" ]] && cp "${temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
         done

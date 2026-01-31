@@ -23,7 +23,6 @@ install.sh                    Installation script
 
 - **Main Script** (`.copilot_yolo.sh`): Handles auto-updates, argument parsing, Docker operations, version checks
 - **Configuration Module** (`.copilot_yolo_config.sh`): Loads config files, generates sample configs
-- **Logging Module** (`.copilot_yolo_logging.sh`): Structured logging with levels (DEBUG, INFO, WARN, ERROR)
 - **Entrypoint** (`.copilot_yolo_entrypoint.sh`): Container user setup, permission management, cleanup
 
 ---
@@ -360,26 +359,6 @@ load_config() {
 generate_sample_config() {
   # Create template config file
 }
-```
-
-### Logging Module (`.copilot_yolo_logging.sh`)
-
-**Note: This module is available but not yet integrated into the main script.**
-
-```bash
-#!/usr/bin/env bash
-# Logging utilities for copilot_yolo
-
-LOG_LEVEL_DEBUG=0
-LOG_LEVEL_INFO=1
-LOG_LEVEL_WARN=2
-LOG_LEVEL_ERROR=3
-
-log_debug() { ... }
-log_info() { ... }
-log_warn() { ... }
-log_error() { ... }
-handle_error() { ... }
 ```
 
 ---

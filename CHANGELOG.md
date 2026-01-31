@@ -22,8 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Improved user feedback**: Better progress indicators and status messages
 
 ### Added (Engineering Perspective)
-- **Logging infrastructure (available for future use)**: Structured logging module with configurable log levels
-  - Module: `.copilot_yolo_logging.sh` (not yet integrated into main script)
 - **CI/CD pipeline**: GitHub Actions workflow for automated testing
   - ShellCheck linting for all shell scripts
   - Docker build tests
@@ -32,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - VERSION file format validation
 - **Modular architecture**: Split functionality into separate modules
   - `.copilot_yolo_config.sh`: Configuration management
-  - `.copilot_yolo_logging.sh`: Logging utilities (available for future use)
   - `.copilot_yolo_completion.bash`: Bash completions
   - `.copilot_yolo_completion.zsh`: Zsh completions
 - **Improved error handling**: Centralized error handling with context and suggestions
@@ -42,9 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shell environment setup now automatically loads completions based on shell type
 - **Auto-update mechanism now downloads all new module files** for backward compatibility
 - Configuration loading now checks installation directory first
+- **Removed unused logging module** to reduce complexity and confusion
 
 ### Fixed
-- **Backward compatibility**: Auto-update now properly downloads new module files (config, logging, completions)
+- **Backward compatibility**: Auto-update now properly downloads new module files (config, completions)
 - **Documentation**: Removed duplicate Configuration section in README
 - Argument parsing converted to case statement for better maintainability
 - Fixed find command with proper grouping for ownership checks

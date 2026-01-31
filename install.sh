@@ -124,7 +124,7 @@ for file in .copilot_yolo.sh .copilot_yolo.Dockerfile .copilot_yolo_entrypoint.s
 done
 
 # Download optional files (non-fatal)
-for file in .copilot_yolo_config.sh .copilot_yolo_logging.sh .dockerignore \
+for file in .copilot_yolo_config.sh .dockerignore \
             .copilot_yolo_completion.bash .copilot_yolo_completion.zsh; do
   curl -fsSL "${raw_base}/${file}" -o "${INSTALL_DIR}/${file}" 2>/dev/null || true
 done
