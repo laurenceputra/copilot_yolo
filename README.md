@@ -6,6 +6,20 @@ including GitHub CLI (`gh`) preinstalled for PR workflows.
 Only the current directory is mounted into the container by default, so other
 host paths are not visible unless you add additional mounts.
 
+## ✨ What's New in v1.1.0
+
+Version 1.1.0 adds powerful new capabilities while maintaining 100% backward compatibility:
+
+- 🏥 **Health Check**: Diagnose system setup with `copilot_yolo health`
+- ⚙️ **Configuration Files**: Persistent settings via `copilot_yolo config`
+- 🔧 **Shell Completions**: Tab completion for bash and zsh (auto-installed)
+- 📝 **Structured Logging**: Configurable log levels and file output
+- ✅ **CI/CD Pipeline**: Automated testing on every change
+- 🎯 **Better Error Messages**: Platform-specific guidance and actionable steps
+- 📦 **Modular Architecture**: Cleaner code organization for easier maintenance
+
+See [CHANGELOG.md](CHANGELOG.md) for complete details.
+
 ## Requirements
 
 - Docker (Desktop or Engine)
@@ -32,6 +46,21 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yo
 ```bash
 copilot_yolo
 ```
+
+### Health Check
+
+Check your system setup and copilot_yolo installation:
+
+```bash
+copilot_yolo health
+```
+
+This will verify:
+- Docker installation and daemon status
+- Docker Buildx availability
+- copilot_yolo version
+- Docker image status
+- Available mounted paths
 
 Pass-through arguments are forwarded to `copilot`:
 
@@ -103,14 +132,41 @@ copilot_yolo login --help
 The container mounts `~/.copilot` (if it exists) from your host, so credentials 
 are shared between runs.
 
-## Troubleshooting
+## Shell Completions
 
-- **Docker not found / daemon not running:** install Docker and start the Docker
-  service, then re-run `copilot_yolo` (see Requirements above for links).
-- **Files missing inside the container:** only the current directory is mounted
-  by default. Run `copilot_yolo` from the repo you want to work on.
+Shell completions for bash and zsh are automatically installed and loaded. After installation, you can:
+
+- Type `copilot_yolo` and press Tab to see available commands
+- Get file path completions for commands like `explain`, `review`, `test`, `describe`
+
+To manually load completions in your current shell:
+```bash
+# Bash
+source ~/.copilot_yolo/.copilot_yolo_completion.bash
+
+# Zsh
+source ~/.copilot_yolo/.copilot_yolo_completion.zsh
+```
 
 ## Configuration
+
+Generate a sample configuration file:
+
+```bash
+copilot_yolo config
+# Creates ~/.copilot_yolo/.copilot_yolo.conf
+```
+
+The configuration file is always located in the installation directory at `~/.copilot_yolo/.copilot_yolo.conf` (or `$COPILOT_YOLO_DIR/.copilot_yolo.conf` if you specified a custom installation directory).
+
+Edit the configuration file to customize:
+- Docker image settings
+- Build behavior
+- Repository sources
+- Logging options
+- Custom Docker arguments
+
+### Available Environment Variables
 
 - `COPILOT_BASE_IMAGE` (default: `node:20-slim`)
 - `COPILOT_YOLO_IMAGE` (default: `copilot-cli-yolo:local`; only be set to images you trust)
@@ -124,12 +180,27 @@ are shared between runs.
 - `COPILOT_BUILD_PULL=1` to pull the base image during build
 - `COPILOT_SKIP_VERSION_CHECK=1` to skip npm version checks and reuse an existing image; requires that the image already exists (for example from a previous run), otherwise the script may fail instead of building it
 - `COPILOT_DRY_RUN=1` to print the computed docker build/run commands without executing
+- `COPILOT_LOG_LEVEL` (default: `1`) for logging verbosity: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR
+- `COPILOT_LOG_FILE` path to log file (logging to file disabled by default)
 - `--pull` flag to force a pull when running `./.copilot_yolo.sh`
+- `health` or `--health` to run system diagnostics
+- `config` to generate a sample configuration file
+
+**Auto-update behavior:**
 - Each run checks npm for the latest `@github/copilot` version (unless skipped)
   and rebuilds the image if it is out of date.
 - The image also rebuilds when the local `copilot_yolo` VERSION changes.
 - Each run checks for copilot_yolo script updates (unless skipped with `COPILOT_SKIP_UPDATE_CHECK=1`)
   and auto-updates if a new version is available.
+
+## Troubleshooting
+
+- **Run health check first:** `copilot_yolo health` will diagnose common issues
+- **Docker not found / daemon not running:** install Docker and start the Docker
+  service, then re-run `copilot_yolo` (see Requirements above for links).
+- **Files missing inside the container:** only the current directory is mounted
+  by default. Run `copilot_yolo` from the repo you want to work on.
+- **For developers:** See [TECHNICAL.md](TECHNICAL.md) for architecture details and debugging guidance.
 
 ## Security note
 
@@ -176,7 +247,7 @@ copilot_yolo --pull
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and [TECHNICAL.md](TECHNICAL.md) for architecture and implementation details.
 
 ## License
 

@@ -13,3 +13,11 @@ Thumbs.db
 
 # Temporary files
 /tmp/
+
+# Test files
+config
+*.test.conf
+
+# Logs
+logs/
+*.log

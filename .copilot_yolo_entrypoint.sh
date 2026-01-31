@@ -8,15 +8,27 @@ TARGET_GROUP="${TARGET_GROUP:-copilot}"
 TARGET_HOME="${TARGET_HOME:-/home/copilot}"
 CLEANUP="${COPILOT_YOLO_CLEANUP:-1}"
 
+# Performance: only run cleanup if changes were made
+workspace_changed=0
+check_workspace_ownership() {
+  if [ -d /workspace ]; then
+    # Check if any files are not owned by target user (fails either the UID or GID check)
+    if [ -n "$(find /workspace \( ! -uid "${TARGET_UID}" -o ! -gid "${TARGET_GID}" \) -print -quit 2>/dev/null)" ]; then
+      workspace_changed=1
+    fi
+  fi
+}
+
 cleanup() {
   if [ "${CLEANUP}" = "1" ] || [ "${CLEANUP}" = "true" ]; then
-    if [ -d /workspace ]; then
+    if [ "${workspace_changed}" = "1" ] && [ -d /workspace ]; then
+      echo "Restoring workspace permissions..." >&2
       chown -R "${TARGET_UID}:${TARGET_GID}" /workspace 2>/dev/null || true
     fi
   fi
 }
 
-trap 'cleanup' EXIT
+trap 'check_workspace_ownership; cleanup' EXIT
 
 case "${TARGET_HOME}" in
   /*) ;;

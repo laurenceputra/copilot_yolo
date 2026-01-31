@@ -2,6 +2,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load configuration if available
+if [[ -f "${SCRIPT_DIR}/.copilot_yolo_config.sh" ]]; then
+  # shellcheck source=.copilot_yolo_config.sh
+  source "${SCRIPT_DIR}/.copilot_yolo_config.sh"
+  load_config || true
+fi
+
 IMAGE="${COPILOT_YOLO_IMAGE:-copilot-cli-yolo:local}"
 DOCKERFILE="${SCRIPT_DIR}/.copilot_yolo.Dockerfile"
 WORKSPACE="$(pwd)"
@@ -64,15 +72,27 @@ if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
       if curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo.sh" -o "${temp_dir}/.copilot_yolo.sh" && \
          curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo.Dockerfile" -o "${temp_dir}/.copilot_yolo.Dockerfile" && \
          curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_entrypoint.sh" -o "${temp_dir}/.copilot_yolo_entrypoint.sh" && \
-         curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.dockerignore" -o "${temp_dir}/.dockerignore" 2>/dev/null && \
          curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/VERSION" -o "${temp_dir}/VERSION"; then
+        
+        # Download optional/new files (non-fatal if they don't exist)
+        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.dockerignore" -o "${temp_dir}/.dockerignore" 2>/dev/null || true
+        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_config.sh" -o "${temp_dir}/.copilot_yolo_config.sh" 2>/dev/null || true
+        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_logging.sh" -o "${temp_dir}/.copilot_yolo_logging.sh" 2>/dev/null || true
+        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_completion.bash" -o "${temp_dir}/.copilot_yolo_completion.bash" 2>/dev/null || true
+        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_completion.zsh" -o "${temp_dir}/.copilot_yolo_completion.zsh" 2>/dev/null || true
         
         chmod +x "${temp_dir}/.copilot_yolo.sh"
         cp "${temp_dir}/.copilot_yolo.sh" "${SCRIPT_DIR}/.copilot_yolo.sh"
         cp "${temp_dir}/.copilot_yolo.Dockerfile" "${SCRIPT_DIR}/.copilot_yolo.Dockerfile"
         cp "${temp_dir}/.copilot_yolo_entrypoint.sh" "${SCRIPT_DIR}/.copilot_yolo_entrypoint.sh"
-        cp "${temp_dir}/.dockerignore" "${SCRIPT_DIR}/.dockerignore" 2>/dev/null || true
         cp "${temp_dir}/VERSION" "${SCRIPT_DIR}/VERSION"
+        
+        # Copy optional files if they were downloaded successfully
+        [[ -f "${temp_dir}/.dockerignore" ]] && cp "${temp_dir}/.dockerignore" "${SCRIPT_DIR}/.dockerignore"
+        [[ -f "${temp_dir}/.copilot_yolo_config.sh" ]] && cp "${temp_dir}/.copilot_yolo_config.sh" "${SCRIPT_DIR}/.copilot_yolo_config.sh"
+        [[ -f "${temp_dir}/.copilot_yolo_logging.sh" ]] && cp "${temp_dir}/.copilot_yolo_logging.sh" "${SCRIPT_DIR}/.copilot_yolo_logging.sh"
+        [[ -f "${temp_dir}/.copilot_yolo_completion.bash" ]] && cp "${temp_dir}/.copilot_yolo_completion.bash" "${SCRIPT_DIR}/.copilot_yolo_completion.bash"
+        [[ -f "${temp_dir}/.copilot_yolo_completion.zsh" ]] && cp "${temp_dir}/.copilot_yolo_completion.zsh" "${SCRIPT_DIR}/.copilot_yolo_completion.zsh"
         
         echo "Updated to version ${remote_version}"
         echo "Re-executing with new version..."
@@ -90,12 +110,25 @@ if [[ "${COPILOT_SKIP_VERSION_CHECK:-0}" != "1" ]] && ! docker buildx version >/
 fi
 
 pass_args=()
+run_health_check=0
+generate_config=0
+
+# Parse arguments
 for arg in "$@"; do
-  if [[ "${arg}" == "--pull" ]]; then
-    PULL_REQUESTED=1
-    continue
-  fi
-  pass_args+=("${arg}")
+  case "${arg}" in
+    --pull)
+      PULL_REQUESTED=1
+      ;;
+    health|--health)
+      run_health_check=1
+      ;;
+    config|--generate-config)
+      generate_config=1
+      ;;
+    *)
+      pass_args+=("${arg}")
+      ;;
+  esac
 done
 
 if [[ "${CONTAINER_HOME}" != /* ]]; then
@@ -224,6 +257,80 @@ fi
 
 if [[ -f "${HOME}/.gitconfig" ]]; then
   docker_args+=("-v" "${HOME}/.gitconfig:${CONTAINER_HOME}/.gitconfig:ro")
+fi
+
+# Generate config command
+if [[ "${generate_config}" == "1" ]]; then
+  if [[ -f "${SCRIPT_DIR}/.copilot_yolo_config.sh" ]]; then
+    # shellcheck source=.copilot_yolo_config.sh
+    source "${SCRIPT_DIR}/.copilot_yolo_config.sh"
+    generate_sample_config
+  else
+    echo "Error: Configuration support not available in this installation."
+    exit 1
+  fi
+  exit 0
+fi
+
+# Health check command
+if [[ "${run_health_check}" == "1" ]]; then
+  echo "=== copilot_yolo Health Check ==="
+  echo ""
+  
+  # Check Docker
+  if command -v docker >/dev/null 2>&1; then
+    echo "✓ Docker: $(docker --version)"
+    if docker info >/dev/null 2>&1; then
+      echo "✓ Docker daemon: running"
+    else
+      echo "✗ Docker daemon: not running"
+      echo "  Start Docker Desktop or the Docker Engine service"
+    fi
+  else
+    echo "✗ Docker: not installed"
+    echo "  ${install_hint}"
+  fi
+  
+  # Check Docker Buildx
+  if docker buildx version >/dev/null 2>&1; then
+    echo "✓ Docker Buildx: $(docker buildx version | head -n1)"
+  else
+    echo "⚠ Docker Buildx: not available (builds may be slower)"
+    echo "  https://docs.docker.com/build/buildx/"
+  fi
+  
+  # Check copilot_yolo version
+  echo "✓ copilot_yolo version: ${local_version:-unknown}"
+  
+  # Check image status
+  if docker image inspect "${IMAGE}" >/dev/null 2>&1; then
+    image_version="$(docker run --rm "${IMAGE}" cat /opt/copilot-version 2>/dev/null || true)"
+    echo "✓ Docker image: exists (Copilot CLI ${image_version:-unknown})"
+  else
+    echo "⚠ Docker image: not built yet (will build on first run)"
+  fi
+  
+  # Check latest CLI version
+  if [[ -n "${latest_version}" ]]; then
+    echo "✓ Latest Copilot CLI: ${latest_version}"
+  fi
+  
+  # Check mounts
+  echo ""
+  echo "=== Mounted Paths ==="
+  [[ -d "${HOME}/.copilot" ]] && echo "✓ ~/.copilot (credentials)" || echo "⚠ ~/.copilot not found (will need to login)"
+  [[ -d "${host_gh_config}" ]] && echo "✓ ${host_gh_config} (gh CLI auth)" || echo "⚠ gh config not found"
+  [[ -f "${HOME}/.gitconfig" ]] && echo "✓ ~/.gitconfig (git config)" || echo "⚠ ~/.gitconfig not found"
+  
+  echo ""
+  echo "=== Status ==="
+  if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    echo "✓ Ready to use! Run: copilot_yolo"
+  else
+    echo "✗ Not ready. Fix the issues above."
+  fi
+  
+  exit 0
 fi
 
 if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then

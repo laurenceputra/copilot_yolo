@@ -121,7 +121,11 @@ mkdir -p "${INSTALL_DIR}"
 curl -fsSL "${raw_base}/.copilot_yolo.sh" -o "${INSTALL_DIR}/.copilot_yolo.sh"
 curl -fsSL "${raw_base}/.copilot_yolo.Dockerfile" -o "${INSTALL_DIR}/.copilot_yolo.Dockerfile"
 curl -fsSL "${raw_base}/.copilot_yolo_entrypoint.sh" -o "${INSTALL_DIR}/.copilot_yolo_entrypoint.sh"
+curl -fsSL "${raw_base}/.copilot_yolo_config.sh" -o "${INSTALL_DIR}/.copilot_yolo_config.sh" 2>/dev/null || true
+curl -fsSL "${raw_base}/.copilot_yolo_logging.sh" -o "${INSTALL_DIR}/.copilot_yolo_logging.sh" 2>/dev/null || true
 curl -fsSL "${raw_base}/.dockerignore" -o "${INSTALL_DIR}/.dockerignore" 2>/dev/null || true
+curl -fsSL "${raw_base}/.copilot_yolo_completion.bash" -o "${INSTALL_DIR}/.copilot_yolo_completion.bash" 2>/dev/null || true
+curl -fsSL "${raw_base}/.copilot_yolo_completion.zsh" -o "${INSTALL_DIR}/.copilot_yolo_completion.zsh" 2>/dev/null || true
 curl -fsSL "${raw_base}/VERSION" -o "${INSTALL_DIR}/VERSION"
 chmod +x "${INSTALL_DIR}/.copilot_yolo.sh"
 
@@ -130,6 +134,13 @@ cat > "${INSTALL_DIR}/env" <<EOF
 copilot_yolo() {
   "${INSTALL_DIR}/.copilot_yolo.sh" "\$@"
 }
+
+# Load shell completions if available
+if [[ -n "\${BASH_VERSION:-}" && -f "${INSTALL_DIR}/.copilot_yolo_completion.bash" ]]; then
+  source "${INSTALL_DIR}/.copilot_yolo_completion.bash"
+elif [[ -n "\${ZSH_VERSION:-}" && -f "${INSTALL_DIR}/.copilot_yolo_completion.zsh" ]]; then
+  source "${INSTALL_DIR}/.copilot_yolo_completion.zsh"
+fi
 EOF
 
 source_line="source \"${INSTALL_DIR}/env\""
