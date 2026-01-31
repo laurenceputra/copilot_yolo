@@ -6,6 +6,20 @@ including GitHub CLI (`gh`) preinstalled for PR workflows.
 Only the current directory is mounted into the container by default, so other
 host paths are not visible unless you add additional mounts.
 
+## ✨ What's New in v1.1.0
+
+Version 1.1.0 adds powerful new capabilities while maintaining 100% backward compatibility:
+
+- 🏥 **Health Check**: Diagnose system setup with `copilot_yolo health`
+- ⚙️ **Configuration Files**: Persistent settings via `copilot_yolo config`
+- 🔧 **Shell Completions**: Tab completion for bash and zsh (auto-installed)
+- 📝 **Structured Logging**: Configurable log levels and file output
+- ✅ **CI/CD Pipeline**: Automated testing on every change
+- 🎯 **Better Error Messages**: Platform-specific guidance and actionable steps
+- 📦 **Modular Architecture**: Cleaner code organization for easier maintenance
+
+See [CHANGELOG.md](CHANGELOG.md) for complete details.
+
 ## Requirements
 
 - Docker (Desktop or Engine)
@@ -147,12 +161,18 @@ Or specify a custom location:
 
 ```bash
 copilot_yolo config ~/.config/copilot_yolo/custom.conf
+
+# Create config in installation directory
+copilot_yolo config install
+# or
+copilot_yolo config here
 ```
 
 Configuration files are loaded from (in order of precedence):
 1. `$COPILOT_YOLO_CONFIG` (if set)
-2. `~/.copilot_yolo.conf`
-3. `~/.config/copilot_yolo/config`
+2. `~/.copilot_yolo/.copilot_yolo.conf` (installation directory)
+3. `~/.copilot_yolo.conf` (user home)
+4. `~/.config/copilot_yolo/config` (XDG standard)
 
 Edit the configuration file to customize:
 - Docker image settings
@@ -161,15 +181,7 @@ Edit the configuration file to customize:
 - Logging options
 - Custom Docker arguments
 
-## Troubleshooting
-
-- **Run health check first:** `copilot_yolo health` will diagnose common issues
-- **Docker not found / daemon not running:** install Docker and start the Docker
-  service, then re-run `copilot_yolo` (see Requirements above for links).
-- **Files missing inside the container:** only the current directory is mounted
-  by default. Run `copilot_yolo` from the repo you want to work on.
-
-## Configuration
+### Available Environment Variables
 
 - `COPILOT_BASE_IMAGE` (default: `node:20-slim`)
 - `COPILOT_YOLO_IMAGE` (default: `copilot-cli-yolo:local`; only be set to images you trust)
@@ -189,11 +201,22 @@ Edit the configuration file to customize:
 - `--pull` flag to force a pull when running `./.copilot_yolo.sh`
 - `health` or `--health` to run system diagnostics
 - `config` to generate a sample configuration file
+
+**Auto-update behavior:**
 - Each run checks npm for the latest `@github/copilot` version (unless skipped)
   and rebuilds the image if it is out of date.
 - The image also rebuilds when the local `copilot_yolo` VERSION changes.
 - Each run checks for copilot_yolo script updates (unless skipped with `COPILOT_SKIP_UPDATE_CHECK=1`)
   and auto-updates if a new version is available.
+
+## Troubleshooting
+## Troubleshooting
+
+- **Run health check first:** `copilot_yolo health` will diagnose common issues
+- **Docker not found / daemon not running:** install Docker and start the Docker
+  service, then re-run `copilot_yolo` (see Requirements above for links).
+- **Files missing inside the container:** only the current directory is mounted
+  by default. Run `copilot_yolo` from the repo you want to work on.
 
 ## Security note
 

@@ -18,8 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - File path completions for commands like `explain`, `review`, `test`, `describe`
 - **Configuration file support**: Generate and use configuration files for persistent settings
   - Run `copilot_yolo config` to generate a sample config
+  - Supports `~/.copilot_yolo/.copilot_yolo.conf` (installation directory)
   - Supports `~/.copilot_yolo.conf` or `~/.config/copilot_yolo/config`
   - Override with `COPILOT_YOLO_CONFIG` environment variable
+  - Special locations: `copilot_yolo config install` or `copilot_yolo config here` creates config in installation directory
 - **Improved user feedback**: Better progress indicators and status messages
 
 ### Added (Engineering Perspective)
@@ -42,12 +44,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Install script now downloads completion and configuration files
 - Shell environment setup now automatically loads completions based on shell type
+- **Auto-update mechanism now downloads all new module files** for backward compatibility
+- Configuration loading now checks installation directory first
+
+### Fixed
+- **Backward compatibility**: Auto-update now properly downloads new module files (config, logging, completions)
+- **Documentation**: Removed duplicate Configuration section in README
+- Argument parsing converted to case statement for better maintainability
+- Fixed find command with proper grouping for ownership checks
 
 ### Documentation
 - Updated README with new features and commands
+- Added feature summary section highlighting v1.1.0 capabilities
 - Added sections for health check, shell completions, and configuration
 - Improved troubleshooting section with health check recommendation
 - Added comprehensive configuration documentation
+- Added CHANGES_EXPLAINED.md with detailed explanation of all changes
 
 ## [1.0.3] - Previous Release
 

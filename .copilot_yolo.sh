@@ -72,15 +72,27 @@ if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
       if curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo.sh" -o "${temp_dir}/.copilot_yolo.sh" && \
          curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo.Dockerfile" -o "${temp_dir}/.copilot_yolo.Dockerfile" && \
          curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_entrypoint.sh" -o "${temp_dir}/.copilot_yolo_entrypoint.sh" && \
-         curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.dockerignore" -o "${temp_dir}/.dockerignore" 2>/dev/null && \
          curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/VERSION" -o "${temp_dir}/VERSION"; then
+        
+        # Download optional/new files (non-fatal if they don't exist)
+        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.dockerignore" -o "${temp_dir}/.dockerignore" 2>/dev/null || true
+        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_config.sh" -o "${temp_dir}/.copilot_yolo_config.sh" 2>/dev/null || true
+        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_logging.sh" -o "${temp_dir}/.copilot_yolo_logging.sh" 2>/dev/null || true
+        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_completion.bash" -o "${temp_dir}/.copilot_yolo_completion.bash" 2>/dev/null || true
+        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_completion.zsh" -o "${temp_dir}/.copilot_yolo_completion.zsh" 2>/dev/null || true
         
         chmod +x "${temp_dir}/.copilot_yolo.sh"
         cp "${temp_dir}/.copilot_yolo.sh" "${SCRIPT_DIR}/.copilot_yolo.sh"
         cp "${temp_dir}/.copilot_yolo.Dockerfile" "${SCRIPT_DIR}/.copilot_yolo.Dockerfile"
         cp "${temp_dir}/.copilot_yolo_entrypoint.sh" "${SCRIPT_DIR}/.copilot_yolo_entrypoint.sh"
-        cp "${temp_dir}/.dockerignore" "${SCRIPT_DIR}/.dockerignore" 2>/dev/null || true
         cp "${temp_dir}/VERSION" "${SCRIPT_DIR}/VERSION"
+        
+        # Copy optional files if they were downloaded successfully
+        [[ -f "${temp_dir}/.dockerignore" ]] && cp "${temp_dir}/.dockerignore" "${SCRIPT_DIR}/.dockerignore"
+        [[ -f "${temp_dir}/.copilot_yolo_config.sh" ]] && cp "${temp_dir}/.copilot_yolo_config.sh" "${SCRIPT_DIR}/.copilot_yolo_config.sh"
+        [[ -f "${temp_dir}/.copilot_yolo_logging.sh" ]] && cp "${temp_dir}/.copilot_yolo_logging.sh" "${SCRIPT_DIR}/.copilot_yolo_logging.sh"
+        [[ -f "${temp_dir}/.copilot_yolo_completion.bash" ]] && cp "${temp_dir}/.copilot_yolo_completion.bash" "${SCRIPT_DIR}/.copilot_yolo_completion.bash"
+        [[ -f "${temp_dir}/.copilot_yolo_completion.zsh" ]] && cp "${temp_dir}/.copilot_yolo_completion.zsh" "${SCRIPT_DIR}/.copilot_yolo_completion.zsh"
         
         echo "Updated to version ${remote_version}"
         echo "Re-executing with new version..."
@@ -258,8 +270,14 @@ if [[ "${generate_config}" == "1" ]]; then
   if [[ -f "${SCRIPT_DIR}/.copilot_yolo_config.sh" ]]; then
     # shellcheck source=.copilot_yolo_config.sh
     source "${SCRIPT_DIR}/.copilot_yolo_config.sh"
+    
+    # Handle special location: "install" or "here" means installation directory
     if [[ -n "${config_output_path}" ]]; then
-      generate_sample_config "${config_output_path}"
+      if [[ "${config_output_path}" == "install" || "${config_output_path}" == "here" ]]; then
+        generate_sample_config "${SCRIPT_DIR}/.copilot_yolo.conf"
+      else
+        generate_sample_config "${config_output_path}"
+      fi
     else
       generate_sample_config
     fi

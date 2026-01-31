@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # Configuration file support for copilot_yolo
 
+# Get the script directory (will be set by main script)
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+
 # Default configuration file locations (in order of precedence)
 COPILOT_CONFIG_FILES=(
   "${COPILOT_YOLO_CONFIG:-}"
+  "${SCRIPT_DIR}/.copilot_yolo.conf"
   "${HOME}/.copilot_yolo.conf"
   "${HOME}/.config/copilot_yolo/config"
 )
