@@ -18,10 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - File path completions for commands like `explain`, `review`, `test`, `describe`
 - **Configuration file support**: Generate and use configuration files for persistent settings
   - Run `copilot_yolo config` to generate a sample config
-  - Supports `~/.copilot_yolo/.copilot_yolo.conf` (installation directory)
-  - Supports `~/.copilot_yolo.conf` or `~/.config/copilot_yolo/config`
-  - Override with `COPILOT_YOLO_CONFIG` environment variable
-  - Special locations: `copilot_yolo config install` or `copilot_yolo config here` creates config in installation directory
+  - Configuration file located in installation directory: `~/.copilot_yolo/.copilot_yolo.conf`
 - **Improved user feedback**: Better progress indicators and status messages
 
 ### Added (Engineering Perspective)

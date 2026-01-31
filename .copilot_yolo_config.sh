@@ -4,29 +4,14 @@
 # Get the script directory (will be set by main script)
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 
-# Default configuration file locations (in order of precedence)
-COPILOT_CONFIG_FILES=(
-  "${COPILOT_YOLO_CONFIG:-}"
-  "${SCRIPT_DIR}/.copilot_yolo.conf"
-  "${HOME}/.copilot_yolo.conf"
-  "${HOME}/.config/copilot_yolo/config"
-)
+# Configuration file location - always in installation directory
+COPILOT_CONFIG_FILE="${SCRIPT_DIR}/.copilot_yolo.conf"
 
 load_config() {
-  local config_file=""
-  
-  # Find first existing config file
-  for file in "${COPILOT_CONFIG_FILES[@]}"; do
-    if [[ -n "${file}" && -f "${file}" ]]; then
-      config_file="${file}"
-      break
-    fi
-  done
-  
-  # Load configuration if found
-  if [[ -n "${config_file}" ]]; then
+  # Load configuration if it exists in installation directory
+  if [[ -f "${COPILOT_CONFIG_FILE}" ]]; then
     # shellcheck disable=SC1090
-    source "${config_file}"
+    source "${COPILOT_CONFIG_FILE}"
     return 0
   fi
   
@@ -35,7 +20,7 @@ load_config() {
 
 # Generate a sample configuration file
 generate_sample_config() {
-  local output_file="${1:-${HOME}/.copilot_yolo.conf}"
+  local output_file="${1:-${COPILOT_CONFIG_FILE}}"
   
   cat > "${output_file}" <<'EOF'
 # copilot_yolo configuration file

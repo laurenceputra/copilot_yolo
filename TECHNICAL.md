@@ -80,18 +80,17 @@ Only copies files that successfully downloaded.
 
 ## Configuration System
 
-### Config File Locations (Priority Order)
+### Config File Location
 
-1. `$COPILOT_YOLO_CONFIG` - Explicit environment variable override
-2. `~/.copilot_yolo/.copilot_yolo.conf` - Installation directory
-3. `~/.copilot_yolo.conf` - User home directory
-4. `~/.config/copilot_yolo/config` - XDG standard location
+The configuration file is always located in the installation directory:
+- `~/.copilot_yolo/.copilot_yolo.conf` (default installation)
+- `$COPILOT_YOLO_DIR/.copilot_yolo.conf` (custom installation directory)
 
 ### Config Loading Logic
 
 The `load_config()` function in `.copilot_yolo_config.sh`:
-- Iterates through config locations in order
-- Sources the first file found
+- Checks for config file in installation directory
+- Sources the file if it exists
 - Returns 0 if config loaded, 1 if no config found
 - Main script gracefully handles missing config (optional feature)
 

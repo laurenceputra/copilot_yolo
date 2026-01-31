@@ -154,25 +154,10 @@ Generate a sample configuration file:
 
 ```bash
 copilot_yolo config
-# Creates ~/.copilot_yolo.conf
+# Creates ~/.copilot_yolo/.copilot_yolo.conf
 ```
 
-Or specify a custom location:
-
-```bash
-copilot_yolo config ~/.config/copilot_yolo/custom.conf
-
-# Create config in installation directory
-copilot_yolo config install
-# or
-copilot_yolo config here
-```
-
-Configuration files are loaded from (in order of precedence):
-1. `$COPILOT_YOLO_CONFIG` (if set)
-2. `~/.copilot_yolo/.copilot_yolo.conf` (installation directory)
-3. `~/.copilot_yolo.conf` (user home)
-4. `~/.config/copilot_yolo/config` (XDG standard)
+The configuration file is always located in the installation directory at `~/.copilot_yolo/.copilot_yolo.conf` (or `$COPILOT_YOLO_DIR/.copilot_yolo.conf` if you specified a custom installation directory).
 
 Edit the configuration file to customize:
 - Docker image settings
@@ -190,7 +175,6 @@ Edit the configuration file to customize:
 - `COPILOT_YOLO_CLEANUP` (default: `1`) to chown `/workspace` to your UID on exit; set to `0` to skip
 - `COPILOT_YOLO_REPO` (default: `laurenceputra/copilot_yolo`) to specify a different repository for updates
 - `COPILOT_YOLO_BRANCH` (default: `main`) to specify a different branch for updates
-- `COPILOT_YOLO_CONFIG` path to a custom configuration file
 - `COPILOT_SKIP_UPDATE_CHECK=1` to skip automatic update checks
 - `COPILOT_BUILD_NO_CACHE=1` to build without cache
 - `COPILOT_BUILD_PULL=1` to pull the base image during build
