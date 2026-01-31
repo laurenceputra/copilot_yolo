@@ -182,8 +182,6 @@ Edit the configuration file to customize:
 - `COPILOT_BUILD_PULL=1` to pull the base image during build
 - `COPILOT_SKIP_VERSION_CHECK=1` to skip npm version checks and reuse an existing image; requires that the image already exists (for example from a previous run), otherwise the script may fail instead of building it
 - `COPILOT_DRY_RUN=1` to print the computed docker build/run commands without executing
-- `COPILOT_LOG_LEVEL` (default: `1`) for logging verbosity: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR
-- `COPILOT_LOG_FILE` path to log file (logging to file disabled by default)
 - `--pull` flag to force a pull when running `./.copilot_yolo.sh`
 - `--mount-ssh` flag to mount `~/.ssh` directory (read-only) for Git operations via SSH
 - `health` or `--health` to run system diagnostics

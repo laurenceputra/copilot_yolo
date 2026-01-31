@@ -364,6 +364,8 @@ generate_sample_config() {
 
 ### Logging Module (`.copilot_yolo_logging.sh`)
 
+**Note: This module is available but not yet integrated into the main script.**
+
 ```bash
 #!/usr/bin/env bash
 # Logging utilities for copilot_yolo

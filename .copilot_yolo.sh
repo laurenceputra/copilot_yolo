@@ -69,30 +69,38 @@ if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
       temp_dir="$(mktemp -d)"
       trap 'rm -rf "${temp_dir}"' EXIT
       
-      if curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo.sh" -o "${temp_dir}/.copilot_yolo.sh" && \
-         curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo.Dockerfile" -o "${temp_dir}/.copilot_yolo.Dockerfile" && \
-         curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_entrypoint.sh" -o "${temp_dir}/.copilot_yolo_entrypoint.sh" && \
-         curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/VERSION" -o "${temp_dir}/VERSION"; then
+      # Download files with a simple helper
+      download_file() {
+        local file="$1"
+        local required="${2:-false}"
+        if curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file}" -o "${temp_dir}/${file}" 2>/dev/null; then
+          return 0
+        elif [[ "${required}" == "true" ]]; then
+          return 1
+        fi
+        return 0
+      }
+      
+      # Download required files
+      if download_file ".copilot_yolo.sh" true && \
+         download_file ".copilot_yolo.Dockerfile" true && \
+         download_file ".copilot_yolo_entrypoint.sh" true && \
+         download_file "VERSION" true; then
         
-        # Download optional/new files (non-fatal if they don't exist)
-        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.dockerignore" -o "${temp_dir}/.dockerignore" 2>/dev/null || true
-        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_config.sh" -o "${temp_dir}/.copilot_yolo_config.sh" 2>/dev/null || true
-        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_logging.sh" -o "${temp_dir}/.copilot_yolo_logging.sh" 2>/dev/null || true
-        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_completion.bash" -o "${temp_dir}/.copilot_yolo_completion.bash" 2>/dev/null || true
-        curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/.copilot_yolo_completion.zsh" -o "${temp_dir}/.copilot_yolo_completion.zsh" 2>/dev/null || true
+        # Download optional files (non-fatal)
+        download_file ".dockerignore"
+        download_file ".copilot_yolo_config.sh"
+        download_file ".copilot_yolo_logging.sh"
+        download_file ".copilot_yolo_completion.bash"
+        download_file ".copilot_yolo_completion.zsh"
         
+        # Copy all downloaded files
         chmod +x "${temp_dir}/.copilot_yolo.sh"
-        cp "${temp_dir}/.copilot_yolo.sh" "${SCRIPT_DIR}/.copilot_yolo.sh"
-        cp "${temp_dir}/.copilot_yolo.Dockerfile" "${SCRIPT_DIR}/.copilot_yolo.Dockerfile"
-        cp "${temp_dir}/.copilot_yolo_entrypoint.sh" "${SCRIPT_DIR}/.copilot_yolo_entrypoint.sh"
-        cp "${temp_dir}/VERSION" "${SCRIPT_DIR}/VERSION"
-        
-        # Copy optional files if they were downloaded successfully
-        [[ -f "${temp_dir}/.dockerignore" ]] && cp "${temp_dir}/.dockerignore" "${SCRIPT_DIR}/.dockerignore"
-        [[ -f "${temp_dir}/.copilot_yolo_config.sh" ]] && cp "${temp_dir}/.copilot_yolo_config.sh" "${SCRIPT_DIR}/.copilot_yolo_config.sh"
-        [[ -f "${temp_dir}/.copilot_yolo_logging.sh" ]] && cp "${temp_dir}/.copilot_yolo_logging.sh" "${SCRIPT_DIR}/.copilot_yolo_logging.sh"
-        [[ -f "${temp_dir}/.copilot_yolo_completion.bash" ]] && cp "${temp_dir}/.copilot_yolo_completion.bash" "${SCRIPT_DIR}/.copilot_yolo_completion.bash"
-        [[ -f "${temp_dir}/.copilot_yolo_completion.zsh" ]] && cp "${temp_dir}/.copilot_yolo_completion.zsh" "${SCRIPT_DIR}/.copilot_yolo_completion.zsh"
+        for file in .copilot_yolo.sh .copilot_yolo.Dockerfile .copilot_yolo_entrypoint.sh VERSION \
+                    .dockerignore .copilot_yolo_config.sh .copilot_yolo_logging.sh \
+                    .copilot_yolo_completion.bash .copilot_yolo_completion.zsh; do
+          [[ -f "${temp_dir}/${file}" ]] && cp "${temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
+        done
         
         echo "Updated to version ${remote_version}"
         echo "Re-executing with new version..."

@@ -22,9 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Improved user feedback**: Better progress indicators and status messages
 
 ### Added (Engineering Perspective)
-- **Logging infrastructure**: Structured logging with configurable log levels
-  - `COPILOT_LOG_LEVEL`: Set verbosity (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR)
-  - `COPILOT_LOG_FILE`: Enable logging to file
+- **Logging infrastructure (available for future use)**: Structured logging module with configurable log levels
+  - Module: `.copilot_yolo_logging.sh` (not yet integrated into main script)
 - **CI/CD pipeline**: GitHub Actions workflow for automated testing
   - ShellCheck linting for all shell scripts
   - Docker build tests
@@ -33,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - VERSION file format validation
 - **Modular architecture**: Split functionality into separate modules
   - `.copilot_yolo_config.sh`: Configuration management
-  - `.copilot_yolo_logging.sh`: Logging utilities
+  - `.copilot_yolo_logging.sh`: Logging utilities (available for future use)
   - `.copilot_yolo_completion.bash`: Bash completions
   - `.copilot_yolo_completion.zsh`: Zsh completions
 - **Improved error handling**: Centralized error handling with context and suggestions
