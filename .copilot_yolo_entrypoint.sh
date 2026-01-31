@@ -12,8 +12,8 @@ CLEANUP="${COPILOT_YOLO_CLEANUP:-1}"
 workspace_changed=0
 check_workspace_ownership() {
   if [ -d /workspace ]; then
-    # Check if any files are not owned by target user
-    if [ -n "$(find /workspace ! -uid "${TARGET_UID}" -o ! -gid "${TARGET_GID}" 2>/dev/null | head -n 1)" ]; then
+    # Check if any files are not owned by target user (must fail both UID and GID check)
+    if [ -n "$(find /workspace \( ! -uid "${TARGET_UID}" -o ! -gid "${TARGET_GID}" \) -print -quit 2>/dev/null)" ]; then
       workspace_changed=1
     fi
   fi

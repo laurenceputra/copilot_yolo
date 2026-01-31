@@ -101,25 +101,28 @@ pass_args=()
 run_health_check=0
 generate_config=0
 config_output_path=""
+
+# Parse arguments
 for arg in "$@"; do
-  if [[ "${arg}" == "--pull" ]]; then
-    PULL_REQUESTED=1
-    continue
-  fi
-  if [[ "${arg}" == "health" || "${arg}" == "--health" ]]; then
-    run_health_check=1
-    continue
-  fi
-  if [[ "${arg}" == "config" || "${arg}" == "--generate-config" ]]; then
-    generate_config=1
-    continue
-  fi
-  # If we're generating config and this looks like a path, save it
-  if [[ "${generate_config}" == "1" && "${arg}" != -* ]]; then
-    config_output_path="${arg}"
-    continue
-  fi
-  pass_args+=("${arg}")
+  case "${arg}" in
+    --pull)
+      PULL_REQUESTED=1
+      ;;
+    health|--health)
+      run_health_check=1
+      ;;
+    config|--generate-config)
+      generate_config=1
+      ;;
+    *)
+      # If we're generating config and this looks like a path, save it
+      if [[ "${generate_config}" == "1" && "${arg}" != -* ]]; then
+        config_output_path="${arg}"
+      else
+        pass_args+=("${arg}")
+      fi
+      ;;
+  esac
 done
 
 if [[ "${CONTAINER_HOME}" != /* ]]; then
