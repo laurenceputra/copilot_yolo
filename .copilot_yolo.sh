@@ -2,6 +2,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load configuration if available
+if [[ -f "${SCRIPT_DIR}/.copilot_yolo_config.sh" ]]; then
+  # shellcheck source=.copilot_yolo_config.sh
+  source "${SCRIPT_DIR}/.copilot_yolo_config.sh"
+  load_config || true
+fi
+
 IMAGE="${COPILOT_YOLO_IMAGE:-copilot-cli-yolo:local}"
 DOCKERFILE="${SCRIPT_DIR}/.copilot_yolo.Dockerfile"
 WORKSPACE="$(pwd)"
@@ -90,9 +98,25 @@ if [[ "${COPILOT_SKIP_VERSION_CHECK:-0}" != "1" ]] && ! docker buildx version >/
 fi
 
 pass_args=()
+run_health_check=0
+generate_config=0
+config_output_path=""
 for arg in "$@"; do
   if [[ "${arg}" == "--pull" ]]; then
     PULL_REQUESTED=1
+    continue
+  fi
+  if [[ "${arg}" == "health" || "${arg}" == "--health" ]]; then
+    run_health_check=1
+    continue
+  fi
+  if [[ "${arg}" == "config" || "${arg}" == "--generate-config" ]]; then
+    generate_config=1
+    continue
+  fi
+  # If we're generating config and this looks like a path, save it
+  if [[ "${generate_config}" == "1" && "${arg}" != -* ]]; then
+    config_output_path="${arg}"
     continue
   fi
   pass_args+=("${arg}")
@@ -224,6 +248,84 @@ fi
 
 if [[ -f "${HOME}/.gitconfig" ]]; then
   docker_args+=("-v" "${HOME}/.gitconfig:${CONTAINER_HOME}/.gitconfig:ro")
+fi
+
+# Generate config command
+if [[ "${generate_config}" == "1" ]]; then
+  if [[ -f "${SCRIPT_DIR}/.copilot_yolo_config.sh" ]]; then
+    # shellcheck source=.copilot_yolo_config.sh
+    source "${SCRIPT_DIR}/.copilot_yolo_config.sh"
+    if [[ -n "${config_output_path}" ]]; then
+      generate_sample_config "${config_output_path}"
+    else
+      generate_sample_config
+    fi
+  else
+    echo "Error: Configuration support not available in this installation."
+    exit 1
+  fi
+  exit 0
+fi
+
+# Health check command
+if [[ "${run_health_check}" == "1" ]]; then
+  echo "=== copilot_yolo Health Check ==="
+  echo ""
+  
+  # Check Docker
+  if command -v docker >/dev/null 2>&1; then
+    echo "✓ Docker: $(docker --version)"
+    if docker info >/dev/null 2>&1; then
+      echo "✓ Docker daemon: running"
+    else
+      echo "✗ Docker daemon: not running"
+      echo "  Start Docker Desktop or the Docker Engine service"
+    fi
+  else
+    echo "✗ Docker: not installed"
+    echo "  ${install_hint}"
+  fi
+  
+  # Check Docker Buildx
+  if docker buildx version >/dev/null 2>&1; then
+    echo "✓ Docker Buildx: $(docker buildx version | head -n1)"
+  else
+    echo "⚠ Docker Buildx: not available (builds may be slower)"
+    echo "  https://docs.docker.com/build/buildx/"
+  fi
+  
+  # Check copilot_yolo version
+  echo "✓ copilot_yolo version: ${local_version:-unknown}"
+  
+  # Check image status
+  if docker image inspect "${IMAGE}" >/dev/null 2>&1; then
+    image_version="$(docker run --rm "${IMAGE}" cat /opt/copilot-version 2>/dev/null || true)"
+    echo "✓ Docker image: exists (Copilot CLI ${image_version:-unknown})"
+  else
+    echo "⚠ Docker image: not built yet (will build on first run)"
+  fi
+  
+  # Check latest CLI version
+  if [[ -n "${latest_version}" ]]; then
+    echo "✓ Latest Copilot CLI: ${latest_version}"
+  fi
+  
+  # Check mounts
+  echo ""
+  echo "=== Mounted Paths ==="
+  [[ -d "${HOME}/.copilot" ]] && echo "✓ ~/.copilot (credentials)" || echo "⚠ ~/.copilot not found (will need to login)"
+  [[ -d "${host_gh_config}" ]] && echo "✓ ${host_gh_config} (gh CLI auth)" || echo "⚠ gh config not found"
+  [[ -f "${HOME}/.gitconfig" ]] && echo "✓ ~/.gitconfig (git config)" || echo "⚠ ~/.gitconfig not found"
+  
+  echo ""
+  echo "=== Status ==="
+  if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    echo "✓ Ready to use! Run: copilot_yolo"
+  else
+    echo "✗ Not ready. Fix the issues above."
+  fi
+  
+  exit 0
 fi
 
 if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then

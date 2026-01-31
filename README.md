@@ -33,6 +33,21 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yo
 copilot_yolo
 ```
 
+### Health Check
+
+Check your system setup and copilot_yolo installation:
+
+```bash
+copilot_yolo health
+```
+
+This will verify:
+- Docker installation and daemon status
+- Docker Buildx availability
+- copilot_yolo version
+- Docker image status
+- Available mounted paths
+
 Pass-through arguments are forwarded to `copilot`:
 
 ```bash
@@ -103,8 +118,52 @@ copilot_yolo login --help
 The container mounts `~/.copilot` (if it exists) from your host, so credentials 
 are shared between runs.
 
+## Shell Completions
+
+Shell completions for bash and zsh are automatically installed and loaded. After installation, you can:
+
+- Type `copilot_yolo` and press Tab to see available commands
+- Get file path completions for commands like `explain`, `review`, `test`, `describe`
+
+To manually load completions in your current shell:
+```bash
+# Bash
+source ~/.copilot_yolo/.copilot_yolo_completion.bash
+
+# Zsh
+source ~/.copilot_yolo/.copilot_yolo_completion.zsh
+```
+
+## Configuration
+
+Generate a sample configuration file:
+
+```bash
+copilot_yolo config
+# Creates ~/.copilot_yolo.conf
+```
+
+Or specify a custom location:
+
+```bash
+copilot_yolo config ~/.config/copilot_yolo/custom.conf
+```
+
+Configuration files are loaded from (in order of precedence):
+1. `$COPILOT_YOLO_CONFIG` (if set)
+2. `~/.copilot_yolo.conf`
+3. `~/.config/copilot_yolo/config`
+
+Edit the configuration file to customize:
+- Docker image settings
+- Build behavior
+- Repository sources
+- Logging options
+- Custom Docker arguments
+
 ## Troubleshooting
 
+- **Run health check first:** `copilot_yolo health` will diagnose common issues
 - **Docker not found / daemon not running:** install Docker and start the Docker
   service, then re-run `copilot_yolo` (see Requirements above for links).
 - **Files missing inside the container:** only the current directory is mounted
@@ -119,12 +178,17 @@ are shared between runs.
 - `COPILOT_YOLO_CLEANUP` (default: `1`) to chown `/workspace` to your UID on exit; set to `0` to skip
 - `COPILOT_YOLO_REPO` (default: `laurenceputra/copilot_yolo`) to specify a different repository for updates
 - `COPILOT_YOLO_BRANCH` (default: `main`) to specify a different branch for updates
+- `COPILOT_YOLO_CONFIG` path to a custom configuration file
 - `COPILOT_SKIP_UPDATE_CHECK=1` to skip automatic update checks
 - `COPILOT_BUILD_NO_CACHE=1` to build without cache
 - `COPILOT_BUILD_PULL=1` to pull the base image during build
 - `COPILOT_SKIP_VERSION_CHECK=1` to skip npm version checks and reuse an existing image; requires that the image already exists (for example from a previous run), otherwise the script may fail instead of building it
 - `COPILOT_DRY_RUN=1` to print the computed docker build/run commands without executing
+- `COPILOT_LOG_LEVEL` (default: `1`) for logging verbosity: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR
+- `COPILOT_LOG_FILE` path to log file (logging to file disabled by default)
 - `--pull` flag to force a pull when running `./.copilot_yolo.sh`
+- `health` or `--health` to run system diagnostics
+- `config` to generate a sample configuration file
 - Each run checks npm for the latest `@github/copilot` version (unless skipped)
   and rebuilds the image if it is out of date.
 - The image also rebuilds when the local `copilot_yolo` VERSION changes.
