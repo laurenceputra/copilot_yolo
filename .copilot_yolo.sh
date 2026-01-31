@@ -372,15 +372,11 @@ copilot_cmd+=("${pass_args[@]}")
 if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then
   if [[ "${need_build}" == "1" ]]; then
     echo "Dry run: would build image with:"
-    printf 'DOCKER_BUILDKIT=1 docker build %q ' "${build_args[@]}"
-    printf '%q ' "-t" "${IMAGE}" "-f" "${DOCKERFILE}" "${SCRIPT_DIR}"
-    printf '\n'
+    echo "DOCKER_BUILDKIT=1 docker build ${build_args[*]} -t ${IMAGE} -f ${DOCKERFILE} ${SCRIPT_DIR}"
   fi
 
   echo "Dry run: would run:"
-  printf 'docker run %q ' "${docker_args[@]}"
-  printf '%q ' "${IMAGE}" "${copilot_cmd[@]}"
-  printf '\n'
+  echo "docker run ${docker_args[*]} ${IMAGE} ${copilot_cmd[*]}"
   exit 0
 fi
 
