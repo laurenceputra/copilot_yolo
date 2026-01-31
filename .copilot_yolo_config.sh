@@ -52,10 +52,6 @@ generate_sample_config() {
 # Logging (requires logging support)
 # COPILOT_LOG_LEVEL="1"  # 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR
 # COPILOT_LOG_FILE="${HOME}/.copilot_yolo/logs/copilot_yolo.log"
-
-# Custom Docker arguments (advanced)
-# Add any custom docker run arguments
-# COPILOT_DOCKER_EXTRA_ARGS=("-e" "MY_VAR=value" "-v" "/host/path:/container/path")
 EOF
   
   echo "Sample configuration generated at: ${output_file}"

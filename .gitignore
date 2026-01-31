@@ -18,6 +18,9 @@ Thumbs.db
 config
 *.test.conf
 
+# User configuration
+.copilot_yolo.conf
+
 # Logs
 logs/
 *.log
