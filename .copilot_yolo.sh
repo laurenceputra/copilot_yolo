@@ -95,9 +95,12 @@ if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
         
         # Copy all downloaded files
         chmod +x "${temp_dir}/.copilot_yolo.sh"
-        for file in .copilot_yolo.sh .copilot_yolo.Dockerfile .copilot_yolo_entrypoint.sh VERSION \
-                    .dockerignore .copilot_yolo_config.sh \
-                    .copilot_yolo_completion.bash .copilot_yolo_completion.zsh; do
+        # Required files
+        for file in .copilot_yolo.sh .copilot_yolo.Dockerfile .copilot_yolo_entrypoint.sh VERSION; do
+          [[ -f "${temp_dir}/${file}" ]] && cp "${temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
+        done
+        # Optional files
+        for file in .dockerignore .copilot_yolo_config.sh .copilot_yolo_completion.bash .copilot_yolo_completion.zsh; do
           [[ -f "${temp_dir}/${file}" ]] && cp "${temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
         done
         
@@ -372,11 +375,17 @@ copilot_cmd+=("${pass_args[@]}")
 if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then
   if [[ "${need_build}" == "1" ]]; then
     echo "Dry run: would build image with:"
-    echo "DOCKER_BUILDKIT=1 docker build ${build_args[*]} -t ${IMAGE} -f ${DOCKERFILE} ${SCRIPT_DIR}"
+    printf 'DOCKER_BUILDKIT=1 docker build'
+    printf ' %q' "${build_args[@]}"
+    printf ' -t %q -f %q %q\n' "${IMAGE}" "${DOCKERFILE}" "${SCRIPT_DIR}"
   fi
 
   echo "Dry run: would run:"
-  echo "docker run ${docker_args[*]} ${IMAGE} ${copilot_cmd[*]}"
+  printf 'docker run'
+  printf ' %q' "${docker_args[@]}"
+  printf ' %q' "${IMAGE}"
+  printf ' %q' "${copilot_cmd[@]}"
+  printf '\n'
   exit 0
 fi
 
