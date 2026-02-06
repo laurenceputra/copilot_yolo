@@ -1,4 +1,5 @@
 #compdef copilot_yolo
+# shellcheck shell=bash disable=SC2034,SC2154
 
 # Zsh completion for copilot_yolo
 
@@ -30,13 +31,13 @@ _copilot_yolo() {
     '1: :->cmds' \
     '*:: :->args'
   
-  case $state in
+  case "${state}" in
     cmds)
       _describe 'copilot_yolo commands' copilot_yolo_opts
       _describe 'copilot commands' copilot_cmds
       ;;
     args)
-      case $words[1] in
+      case "${words[1]}" in
         explain|review|test|describe)
           _files
           ;;

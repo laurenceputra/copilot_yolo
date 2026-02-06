@@ -90,6 +90,12 @@ Only copies files that successfully downloaded.
 - **Forward Compatible**: v1.1.0 → v1.0.3 gracefully handles missing files (404s ignored)
 - **Future-Proof**: New modules can be added without breaking older versions
 
+### Release Discipline
+
+- Any change to distributed runtime files must include a `VERSION` bump in the same PR.
+- CI enforces this rule in `.github/workflows/ci.yml` (`Enforce VERSION bump for runtime file changes`).
+- The guarded runtime file set is documented in `AGENTS.md` and should stay aligned with the CI rule.
+
 ---
 
 ## Configuration System
