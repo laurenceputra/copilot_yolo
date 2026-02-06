@@ -5,6 +5,14 @@ All notable changes to copilot_yolo will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-02-06
+
+### Fixed
+- **ShellCheck compatibility**: Updated bash and zsh completion scripts to satisfy CI linting
+
+### Changed
+- **CI simplification**: Removed the Docker build test job from GitHub Actions workflow
+
 ## [1.1.1] - 2026-02-06
 
 ### Added
@@ -73,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.1.2]: https://github.com/laurenceputra/copilot_yolo/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/laurenceputra/copilot_yolo/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/laurenceputra/copilot_yolo/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/laurenceputra/copilot_yolo/releases/tag/v1.0.3

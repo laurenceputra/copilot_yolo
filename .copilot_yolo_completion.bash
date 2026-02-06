@@ -17,11 +17,13 @@ _copilot_yolo_completions() {
   opts="${yolo_opts} ${copilot_cmds} --help --version --yolo"
   
   # Provide completions
-  COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+  mapfile -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
   
   # Also complete filenames for some commands
   if [[ "${prev}" =~ ^(explain|review|test|describe)$ ]]; then
-    COMPREPLY+=( $(compgen -f -- "${cur}") )
+    local -a file_matches
+    mapfile -t file_matches < <(compgen -f -- "${cur}")
+    COMPREPLY+=("${file_matches[@]}")
   fi
   
   return 0
