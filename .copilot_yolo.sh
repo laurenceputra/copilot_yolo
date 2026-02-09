@@ -254,6 +254,14 @@ docker_args=(
   -w "${CONTAINER_WORKDIR}"
 )
 
+if [[ -n "${GH_TOKEN:-}" ]]; then
+  docker_args+=("-e" "GH_TOKEN=${GH_TOKEN}")
+fi
+
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  docker_args+=("-e" "GITHUB_TOKEN=${GITHUB_TOKEN}")
+fi
+
 # Mount ~/.copilot if it exists to use host login details
 if [[ -d "${HOME}/.copilot" ]]; then
   docker_args+=("-v" "${HOME}/.copilot:${CONTAINER_HOME}/.copilot")
