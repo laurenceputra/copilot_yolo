@@ -9,7 +9,9 @@ RUN apt-get update \
     curl \
     git \
     gosu \
+    openssh-client \
     passwd \
+    ripgrep \
     sudo \
   && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \

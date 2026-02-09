@@ -25,3 +25,6 @@ config
 # Logs
 logs/
 *.log
+
+.specifications/
+.pr_details/

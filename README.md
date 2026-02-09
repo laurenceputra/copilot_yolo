@@ -2,7 +2,7 @@
 
 Run the GitHub Copilot CLI in a disposable Docker container with your current
 repo mounted. The script builds a local image and starts Copilot with yolo mode,
-including GitHub CLI (`gh`) preinstalled for PR workflows.
+including GitHub CLI (`gh`), ripgrep (`rg`), and the OpenSSH client for PR workflows.
 Only the current directory is mounted into the container by default, so other
 host paths are not visible unless you add additional mounts.
 
@@ -92,6 +92,7 @@ The container automatically mounts the following paths from your host system:
 - All file modifications in `/workspace` are immediately reflected on your host system
 - SSH keys are NOT mounted by default to reduce security blast radius
 - Use `--mount-ssh` flag to enable SSH key mounting when you need Git operations via SSH
+- The container includes the OpenSSH client; you only need to mount keys when required
 
 ## Automatic Updates
 
@@ -133,6 +134,8 @@ copilot_yolo login --help
 
 The container mounts `~/.copilot` (if it exists) from your host, so credentials 
 are shared between runs.
+If `GH_TOKEN` or `GITHUB_TOKEN` is set on your host, copilot_yolo passes it into
+the container so `gh` can authenticate without an interactive login.
 
 ## Shell Completions
 
