@@ -68,6 +68,31 @@ Pass-through arguments are forwarded to `copilot`:
 copilot_yolo --help
 ```
 
+## Command Behavior Reference
+
+`copilot_yolo` consumes a small set of wrapper-only commands/flags, then forwards the remaining arguments to `copilot` inside Docker.
+
+### Default command behavior
+
+- With no arguments, it runs `copilot --yolo`.
+- For most commands, it prepends `--yolo` and passes arguments through unchanged.
+- `login` is treated specially: when `login` is the first forwarded command, `--yolo` is not added.
+
+Examples:
+
+- `copilot_yolo --help` → `copilot --yolo --help`
+- `copilot_yolo explain README.md` → `copilot --yolo explain README.md`
+- `copilot_yolo login --help` → `copilot login --help`
+
+### Wrapper-only commands and flags
+
+These are handled by the wrapper and are not passed to `copilot`:
+
+- `health` or `--health`: run diagnostics and exit
+- `config` or `--generate-config`: generate sample config and exit
+- `--pull`: request a Docker rebuild with `--pull`
+- `--mount-ssh`: mount `~/.ssh` read-only into the container
+
 By default, your current repo is mounted into the container at `/workspace`,
 so make sure you run `copilot_yolo` from the repo you want Copilot to access.
 
@@ -164,17 +189,57 @@ copilot_yolo config
 
 The configuration file is always located in the installation directory at `~/.copilot_yolo/.copilot_yolo.conf` (or `$COPILOT_YOLO_DIR/.copilot_yolo.conf` if you specified a custom installation directory).
 
-Edit the configuration file to customize:
-- Docker image settings
-- Build behavior
-- Repository sources
-- Logging options
-- Custom Docker arguments
+The configuration file is sourced as a bash script (`source ~/.copilot_yolo/.copilot_yolo.conf`), so standard shell assignments, comments, and parameter expansion are supported.
+
+### Config semantics and precedence
+
+Configuration values are resolved in this order:
+
+1. `copilot_yolo` starts with environment variables from the shell.
+2. If present, `.copilot_yolo.conf` is sourced and can set/override variables.
+3. The wrapper applies built-in defaults for any still-unset variables.
+
+In practice:
+
+- Variables assigned explicitly in `.copilot_yolo.conf` override host environment values for that run.
+- Variables left unset in `.copilot_yolo.conf` can still be set via environment variables.
+- To keep config defaults while allowing one-off environment overrides, use conditional assignments in your config file.
+
+Example (`~/.copilot_yolo/.copilot_yolo.conf`):
+
+```bash
+: "${COPILOT_BASE_IMAGE:=node:20-slim}"
+: "${COPILOT_BUILD_PULL:=1}"
+: "${COPILOT_SKIP_UPDATE_CHECK:=0}"
+```
+
+With the pattern above, you can still do one-off overrides:
+
+```bash
+COPILOT_BUILD_PULL=0 copilot_yolo --help
+```
+
+### Practical config examples
+
+Pin updates to a fork/branch:
+
+```bash
+COPILOT_YOLO_REPO="yourname/copilot_yolo"
+COPILOT_YOLO_BRANCH="main"
+```
+
+Keep local runs predictable while debugging wrapper behavior:
+
+```bash
+COPILOT_SKIP_UPDATE_CHECK=1
+COPILOT_SKIP_VERSION_CHECK=1
+COPILOT_DRY_RUN=1
+```
 
 ### Available Environment Variables
 
 - `COPILOT_BASE_IMAGE` (default: `node:20-slim`)
-- `COPILOT_YOLO_IMAGE` (default: `copilot-cli-yolo:local`; only be set to images you trust)
+- `COPILOT_YOLO_IMAGE` (default: `copilot-cli-yolo:local`; only set this to images you trust)
 - `COPILOT_YOLO_HOME` (default: `/home/copilot`; advanced, must be an absolute container path)
 - `COPILOT_YOLO_WORKDIR` (default: `/workspace`; advanced, must be an absolute container path)
 - `COPILOT_YOLO_CLEANUP` (default: `1`) to chown `/workspace` to your UID on exit; set to `0` to skip
@@ -185,10 +250,13 @@ Edit the configuration file to customize:
 - `COPILOT_BUILD_PULL=1` to pull the base image during build
 - `COPILOT_SKIP_VERSION_CHECK=1` to skip npm version checks and reuse an existing image; requires that the image already exists (for example from a previous run), otherwise the script may fail instead of building it
 - `COPILOT_DRY_RUN=1` to print the computed docker build/run commands without executing
-- `--pull` flag to force a pull when running `./.copilot_yolo.sh`
-- `--mount-ssh` flag to mount `~/.ssh` directory (read-only) for Git operations via SSH
+
+### Wrapper-only CLI options (not environment variables)
+
+- `--pull` to force a pull during Docker build
+- `--mount-ssh` to mount `~/.ssh` read-only for SSH-based Git operations
 - `health` or `--health` to run system diagnostics
-- `config` to generate a sample configuration file
+- `config` or `--generate-config` to generate a sample configuration file
 
 **Auto-update behavior:**
 - Each run checks npm for the latest `@github/copilot` version (unless skipped)

@@ -114,6 +114,21 @@ The `load_config()` function in `.copilot_yolo_config.sh`:
 - Returns 0 if config loaded, 1 if no config found
 - Main script gracefully handles missing config (optional feature)
 
+Because the config file is sourced before defaults are applied in `.copilot_yolo.sh`,
+assignments in config are treated as environment values for the run and feed the
+later `${VAR:-default}` expansion path.
+
+### Config Format and Precedence
+
+- Format: bash-sourced file (`.copilot_yolo.conf`)
+- Precedence at runtime:
+  1. Process environment at launch
+  2. Config file assignments (if file exists)
+  3. Script defaults for unset variables
+
+If a setting should remain overridable by host environment for one-off commands,
+prefer conditional assignments in config (`: "${VAR:=value}"`) instead of hard sets (`VAR="value"`).
+
 ### Adding New Configuration Options
 
 1. Add variable with default in `.copilot_yolo.sh`
@@ -181,6 +196,8 @@ esac
 
 - `health` / `--health` - Run diagnostics (handled before Docker)
 - `config` / `--generate-config` - Generate config file (handled before Docker)
+- `--pull` - Marks rebuild-with-pull request for Docker build args
+- `--mount-ssh` - Enables read-only mount of `~/.ssh` into container
 - `login` - Pass to copilot without `--yolo` flag
 - All other args passed to `copilot --yolo`
 
@@ -206,11 +223,12 @@ COPILOT_DRY_RUN=1 ./copilot_yolo.sh
 The GitHub Actions workflow (`.github/workflows/ci.yml`) validates:
 
 1. **ShellCheck Linting** - Code quality for all shell scripts
-2. **Docker Build Test** - Validates image builds successfully
-3. **Install Script Test** - Tests installation on Ubuntu and macOS
-4. **Health Check Test** - Verifies diagnostic command works
-5. **Config Generation Test** - Validates config file creation
+2. **Install Script Test** - Tests installation on Ubuntu and macOS
+3. **Health Check Test** - Verifies diagnostic command works
+4. **Config Generation Test** - Validates config file creation
+5. **Dry Run Test** - Verifies dry-run output includes build/run commands
 6. **VERSION Validation** - Ensures semver format
+7. **VERSION Guard** - Fails when distributed runtime files change without a `VERSION` bump
 
 ### Adding New Tests
 
@@ -283,9 +301,10 @@ fi
 
 **Mounted** (Read-Only):
 - `~/.gitconfig` → Container home (git config)
+- `~/.ssh` → Container home (SSH keys), only when `--mount-ssh` is used
 
 **NOT Mounted**:
-- `~/.ssh` - SSH keys excluded to reduce security blast radius
+- `~/.ssh` by default (excluded unless explicitly requested with `--mount-ssh`)
 
 ### Sudo in Container
 
@@ -371,10 +390,10 @@ The auto-update mechanism will pull new versions automatically.
 #!/usr/bin/env bash
 # Configuration file support for copilot_yolo
 
-COPILOT_CONFIG_FILES=(...)  # Priority list
+COPILOT_CONFIG_FILE="${SCRIPT_DIR}/.copilot_yolo.conf"
 
 load_config() {
-  # Find and source first available config
+  # Source config from install directory if it exists
 }
 
 generate_sample_config() {
@@ -395,14 +414,17 @@ bash -x .copilot_yolo.sh
 
 ### Common Issues
 
-**Issue**: Auto-update fails  
+**Issue**: Auto-update fails
 **Debug**: Check curl output, verify network connectivity, test URL manually
 
-**Issue**: Config not loaded  
-**Debug**: Verify config file exists and has correct permissions, check syntax
+**Issue**: Config not loaded
+**Debug**: Verify config path (`$SCRIPT_DIR/.copilot_yolo.conf`) exists and has valid bash syntax
 
-**Issue**: Docker build fails  
+**Issue**: Docker build fails
 **Debug**: Run with `COPILOT_BUILD_NO_CACHE=1`, check Docker logs
+
+**Issue**: `--mount-ssh` has no effect
+**Debug**: Ensure `~/.ssh` exists on host; wrapper warns if directory is missing
 
 ---
 
