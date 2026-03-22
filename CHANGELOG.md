@@ -5,6 +5,16 @@ All notable changes to copilot_yolo will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Added `scripts/draft_release_notes.sh` to draft release notes from git ranges
+  (defaulting to latest semver tag to `HEAD`) with Keep a Changelog-style sections.
+
+### Documentation
+- Documented release-note drafter usage and workflow updates in README,
+  TECHNICAL, and CONTRIBUTING guides.
+
 ## [1.1.2] - 2026-02-09
 
 ### Added
@@ -88,6 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[Unreleased]: https://github.com/laurenceputra/copilot_yolo/compare/v1.1.2...HEAD
 [1.1.2]: https://github.com/laurenceputra/copilot_yolo/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/laurenceputra/copilot_yolo/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/laurenceputra/copilot_yolo/compare/v1.0.3...v1.1.0

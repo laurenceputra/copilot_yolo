@@ -221,6 +221,61 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) validates:
 
 ---
 
+## Release Note Drafter
+
+The repository includes a local release-note drafting utility:
+
+- `scripts/draft_release_notes.sh`
+
+### Inputs and Defaults
+
+- `--from <ref>`: start ref (exclusive)
+- `--to <ref>`: end ref (inclusive), defaults to `HEAD`
+- `--output <path>`: optional markdown destination file
+
+If `--from` is omitted, the script picks the latest reachable semver-like tag from
+`--to` using `git tag --merged <to> --sort=-v:refname` and a semver matcher. If no
+matching tag exists, it falls back to repository history start.
+
+### Parsing and Section Mapping
+
+The script reads commit subjects from `git log --no-merges`, then inspects changed
+paths per commit with `git show --name-only`.
+
+It classifies commits into Keep a Changelog-style sections:
+
+- `Added`: `feat`/`feature`/`add` style prefixes
+- `Fixed`: `fix`/`bugfix`/`hotfix`/`patch` style prefixes
+- `Documentation`: docs-focused prefixes or documentation-only changed paths
+- `CI`: workflow/build prefixes or CI-only changed paths
+- `Changed`: fallback for uncategorized commits
+
+Additional behavior:
+
+- strips common conventional-commit prefixes for cleaner bullet text
+- excludes known planning noise (`Initial plan`)
+- collapses repeated normalized subjects per section and combines their short SHAs
+
+### Output Shape
+
+Output includes:
+
+- generation date
+- analyzed git range
+- non-merge commit count
+- ordered sections (`Added`, `Changed`, `Fixed`, `Documentation`, `CI`)
+
+Empty sections are omitted. If all sections are empty, a fallback `Changed` section
+is emitted to indicate that no notable non-merge commits were found.
+
+### Known Limitations
+
+- Categorization is heuristic and not guaranteed to match intent in all cases.
+- Commit body text is not analyzed (subject and changed paths only).
+- Auto-start behavior depends on semver-like tag hygiene in the repository.
+
+---
+
 ## Performance Optimizations
 
 ### Conditional Cleanup
