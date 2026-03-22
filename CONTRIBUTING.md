@@ -93,10 +93,14 @@ See `.github/workflows/ci.yml` for automated tests that run on every PR.
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Update CHANGELOG.md with your changes
-5. Update TECHNICAL.md if you changed architecture
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+4. Draft release notes for your change range (before writing release/PR text):
+   ```bash
+   scripts/draft_release_notes.sh --from <start-ref> --to HEAD
+   ```
+5. Update CHANGELOG.md with your changes
+6. Update TECHNICAL.md if you changed architecture
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
 ## Documentation
 
@@ -109,4 +113,3 @@ When adding features:
 ## Questions?
 
 Feel free to open an issue for any questions or concerns.
-
