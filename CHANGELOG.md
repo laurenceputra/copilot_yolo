@@ -5,6 +5,14 @@ All notable changes to copilot_yolo will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Documentation
+- Backfilled command behavior docs to explicitly distinguish wrapper-only flags/commands from passthrough Copilot arguments
+- Clarified `login` special handling vs default `--yolo` argument injection
+- Expanded configuration docs with bash-sourced config semantics, precedence/interaction guidance, and practical examples
+- Updated technical internals and CI coverage notes to match current implementation (`--mount-ssh` parsing path, rebuild triggers, and dry-run CI validation)
+
 ## [1.1.2] - 2026-02-09
 
 ### Added
@@ -48,9 +56,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added (Engineering Perspective)
 - **CI/CD pipeline**: GitHub Actions workflow for automated testing
   - ShellCheck linting for all shell scripts
-  - Docker build tests
   - Install script validation on Ubuntu and macOS
   - Health check and config generation tests
+  - Dry run mode validation
   - VERSION file format validation
 - **Modular architecture**: Split functionality into separate modules
   - `.copilot_yolo_config.sh`: Configuration management

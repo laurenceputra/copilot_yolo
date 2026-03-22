@@ -147,10 +147,15 @@ These enable version comparison for auto-rebuild decisions.
 
 ### Rebuild Triggers
 
-Image rebuilds when:
-1. Copilot CLI version changes (detected via npm registry check)
-2. copilot_yolo VERSION file changes
-3. User requests rebuild (`--pull` flag or `COPILOT_BUILD_NO_CACHE=1`)
+The Docker image is rebuilt when any of these conditions are met:
+1. Explicit rebuild request (`--pull`, `COPILOT_BUILD_NO_CACHE=1`, or `COPILOT_BUILD_PULL=1`)
+2. Image does not exist locally
+3. Local `VERSION` differs from the image's `/opt/copilot-yolo-version`
+4. Latest npm `@github/copilot` version differs from image `/opt/copilot-version`
+
+Notes:
+- `COPILOT_SKIP_VERSION_CHECK=1` skips the npm lookup, so trigger #4 is bypassed.
+- `COPILOT_DRY_RUN=1` prints the computed build/run commands without executing them.
 
 ---
 
@@ -170,6 +175,9 @@ case "${arg}" in
     ;;
   config|--generate-config)
     generate_config=1
+    ;;
+  --mount-ssh)
+    mount_ssh=1
     ;;
   *)
     pass_args+=("${arg}")
@@ -206,11 +214,11 @@ COPILOT_DRY_RUN=1 ./copilot_yolo.sh
 The GitHub Actions workflow (`.github/workflows/ci.yml`) validates:
 
 1. **ShellCheck Linting** - Code quality for all shell scripts
-2. **Docker Build Test** - Validates image builds successfully
-3. **Install Script Test** - Tests installation on Ubuntu and macOS
-4. **Health Check Test** - Verifies diagnostic command works
-5. **Config Generation Test** - Validates config file creation
-6. **VERSION Validation** - Ensures semver format
+2. **Install Script Test** - Tests installation on Ubuntu and macOS
+3. **Health Check Test** - Verifies diagnostic command works
+4. **Config Generation Test** - Validates config file creation
+5. **Dry Run Test** - Verifies dry-run output shape and copilot command construction
+6. **VERSION Validation + Guard** - Ensures semver format and enforces VERSION bumps when runtime-distributed files change
 
 ### Adding New Tests
 
