@@ -47,6 +47,26 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/laurenceputra/copilot_yo
 copilot_yolo
 ```
 
+### Command Behavior Reference
+
+`copilot_yolo` is a wrapper around `copilot` with a few wrapper-only controls.
+
+| Input | Wrapper behavior | Command executed in container |
+|---|---|---|
+| `copilot_yolo` | Adds default yolo mode | `copilot --yolo` |
+| `copilot_yolo --help` | Forwards args, keeps default yolo mode | `copilot --yolo --help` |
+| `copilot_yolo explain src/app.ts` | Forwards args, keeps default yolo mode | `copilot --yolo explain src/app.ts` |
+| `copilot_yolo login` | Special-case: does **not** add `--yolo` | `copilot login` |
+| `copilot_yolo login --help` | Special-case: does **not** add `--yolo` | `copilot login --help` |
+
+Wrapper-only controls (consumed by `copilot_yolo`, not passed through to `copilot`):
+- `--pull` forces Docker build with `--pull`
+- `--mount-ssh` mounts host `~/.ssh` into the container read-only
+- `health` / `--health` runs diagnostics and exits
+- `config` / `--generate-config` writes a sample config and exits
+
+All other arguments are passed through unchanged.
+
 ### Health Check
 
 Check your system setup and copilot_yolo installation:
@@ -94,17 +114,20 @@ The container automatically mounts the following paths from your host system:
 - Use `--mount-ssh` flag to enable SSH key mounting when you need Git operations via SSH
 - The container includes the OpenSSH client; you only need to mount keys when required
 
-## Automatic Updates
+## Automatic Updates and Rebuilds
 
-**copilot_yolo automatically ensures you're always using the latest GitHub Copilot CLI.**
+`copilot_yolo` performs two separate checks:
 
-Every time you run `copilot_yolo`, it:
-1. Checks npm for the latest `@github/copilot` version
-2. Compares it with the version in your local Docker image
-3. Automatically rebuilds the image if a newer version is available
-4. Rebuilds the image if the local `copilot_yolo` VERSION changes
+1. **Wrapper update check** (unless `COPILOT_SKIP_UPDATE_CHECK=1`)
+   - Compares local `VERSION` with `${COPILOT_YOLO_REPO}/${COPILOT_YOLO_BRANCH}`
+   - Auto-updates wrapper files when a newer wrapper version is available
+2. **Docker image rebuild decision**
+   - Rebuilds when the image is missing
+   - Rebuilds when local `VERSION` and image `/opt/copilot-yolo-version` differ
+   - Rebuilds when explicitly requested (`--pull`, `COPILOT_BUILD_PULL=1`, or `COPILOT_BUILD_NO_CACHE=1`)
+   - Falls back to npm version comparison only when local `VERSION` is unavailable
 
-This means you always get the latest features and fixes without manual intervention.
+By default, the wrapper also checks npm for the latest `@github/copilot` version to inform build behavior and health output.
 
 To skip version checking (use existing image):
 ```bash
@@ -166,10 +189,39 @@ The configuration file is always located in the installation directory at `~/.co
 
 Edit the configuration file to customize:
 - Docker image settings
-- Build behavior
-- Repository sources
-- Logging options
-- Custom Docker arguments
+- Container paths and workspace ownership cleanup behavior
+- Update source repository/branch
+- Build and version-check behavior
+
+### Config Format and Precedence
+
+`.copilot_yolo.conf` is sourced as a Bash script by `.copilot_yolo.sh`, so it supports shell syntax (variable expansion, comments, conditionals).
+
+Runtime value resolution is:
+1. Script defaults (`${VAR:-default}`)
+2. Host environment variables
+3. Values assigned in `.copilot_yolo.conf`
+
+Because config is sourced in-process, config assignments override same-named host env vars. If you want host env vars to remain override-able, write config values with parameter expansion:
+
+```bash
+COPILOT_BASE_IMAGE="${COPILOT_BASE_IMAGE:-node:20-slim}"
+COPILOT_YOLO_IMAGE="${COPILOT_YOLO_IMAGE:-copilot-cli-yolo:local}"
+```
+
+### Common Configuration Examples
+
+```bash
+# Track updates from a fork/branch
+COPILOT_YOLO_REPO="yourname/copilot_yolo"
+COPILOT_YOLO_BRANCH="main"
+
+# Always pull base image metadata during rebuilds
+COPILOT_BUILD_PULL="1"
+
+# Skip ownership reset on exit
+COPILOT_YOLO_CLEANUP="0"
+```
 
 ### Available Environment Variables
 
@@ -183,19 +235,15 @@ Edit the configuration file to customize:
 - `COPILOT_SKIP_UPDATE_CHECK=1` to skip automatic update checks
 - `COPILOT_BUILD_NO_CACHE=1` to build without cache
 - `COPILOT_BUILD_PULL=1` to pull the base image during build
-- `COPILOT_SKIP_VERSION_CHECK=1` to skip npm version checks and reuse an existing image; requires that the image already exists (for example from a previous run), otherwise the script may fail instead of building it
+- `COPILOT_SKIP_VERSION_CHECK=1` to skip npm `@github/copilot` version lookup; image-missing and local-version rebuild checks still apply
 - `COPILOT_DRY_RUN=1` to print the computed docker build/run commands without executing
-- `--pull` flag to force a pull when running `./.copilot_yolo.sh`
-- `--mount-ssh` flag to mount `~/.ssh` directory (read-only) for Git operations via SSH
-- `health` or `--health` to run system diagnostics
-- `config` to generate a sample configuration file
 
-**Auto-update behavior:**
-- Each run checks npm for the latest `@github/copilot` version (unless skipped)
-  and rebuilds the image if it is out of date.
-- The image also rebuilds when the local `copilot_yolo` VERSION changes.
-- Each run checks for copilot_yolo script updates (unless skipped with `COPILOT_SKIP_UPDATE_CHECK=1`)
-  and auto-updates if a new version is available.
+### Wrapper-Only Flags and Commands
+
+- `--pull` forces Docker build with `--pull`
+- `--mount-ssh` mounts `~/.ssh` read-only into the container
+- `health` / `--health` runs diagnostics
+- `config` / `--generate-config` writes a sample configuration file
 
 ## Troubleshooting
 

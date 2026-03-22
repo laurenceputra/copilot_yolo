@@ -148,9 +148,10 @@ These enable version comparison for auto-rebuild decisions.
 ### Rebuild Triggers
 
 Image rebuilds when:
-1. Copilot CLI version changes (detected via npm registry check)
-2. copilot_yolo VERSION file changes
-3. User requests rebuild (`--pull` flag or `COPILOT_BUILD_NO_CACHE=1`)
+1. A rebuild is explicitly requested (`--pull`, `COPILOT_BUILD_PULL=1`, or `COPILOT_BUILD_NO_CACHE=1`)
+2. The local image does not exist
+3. `VERSION` differs from image `/opt/copilot-yolo-version` (or image yolo version cannot be read)
+4. Fallback path only: when local `VERSION` is unavailable, npm `@github/copilot` version differs from image `/opt/copilot-version`
 
 ---
 
@@ -164,6 +165,9 @@ Uses a `case` statement for maintainability:
 case "${arg}" in
   --pull)
     PULL_REQUESTED=1
+    ;;
+  --mount-ssh)
+    mount_ssh=1
     ;;
   health|--health)
     run_health_check=1
@@ -206,11 +210,11 @@ COPILOT_DRY_RUN=1 ./copilot_yolo.sh
 The GitHub Actions workflow (`.github/workflows/ci.yml`) validates:
 
 1. **ShellCheck Linting** - Code quality for all shell scripts
-2. **Docker Build Test** - Validates image builds successfully
-3. **Install Script Test** - Tests installation on Ubuntu and macOS
-4. **Health Check Test** - Verifies diagnostic command works
-5. **Config Generation Test** - Validates config file creation
-6. **VERSION Validation** - Ensures semver format
+2. **Install Script Test** - Tests installation on Ubuntu and macOS
+3. **Health Check Test** - Verifies diagnostic command works
+4. **Config Generation Test** - Validates config file creation
+5. **Dry Run Test** - Verifies generated docker build/run command output
+6. **VERSION Validation + Guard** - Ensures semver format and enforces VERSION bump when distributed runtime files change
 
 ### Adding New Tests
 
@@ -371,14 +375,19 @@ The auto-update mechanism will pull new versions automatically.
 #!/usr/bin/env bash
 # Configuration file support for copilot_yolo
 
-COPILOT_CONFIG_FILES=(...)  # Priority list
+COPILOT_CONFIG_FILE="${SCRIPT_DIR}/.copilot_yolo.conf"
 
 load_config() {
-  # Find and source first available config
+  # Source config file if present in install directory
+  if [[ -f "${COPILOT_CONFIG_FILE}" ]]; then
+    source "${COPILOT_CONFIG_FILE}"
+    return 0
+  fi
+  return 1
 }
 
 generate_sample_config() {
-  # Create template config file
+  # Write a bash-sourced sample config template
 }
 ```
 

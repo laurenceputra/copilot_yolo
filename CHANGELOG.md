@@ -5,6 +5,13 @@ All notable changes to copilot_yolo will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Documentation
+- Backfilled command behavior reference in README, including `login` special handling, wrapper-only flags (`--pull`, `--mount-ssh`), and pass-through semantics.
+- Expanded README configuration docs to clarify bash-sourced config format, config/environment interaction, precedence implications, and practical examples.
+- Aligned TECHNICAL internals with current implementation and CI (rebuild trigger logic, argument parsing snippet including `--mount-ssh`, and current workflow checks).
+
 ## [1.1.2] - 2026-02-09
 
 ### Added
