@@ -197,6 +197,38 @@ Edit the configuration file to customize:
 - Each run checks for copilot_yolo script updates (unless skipped with `COPILOT_SKIP_UPDATE_CHECK=1`)
   and auto-updates if a new version is available.
 
+## Draft Release Notes
+
+Use the local drafter script to generate a Keep a Changelog-style release-note draft
+from git history:
+
+```bash
+scripts/draft_release_notes.sh [--from <ref>] [--to <ref>] [--output <path>]
+```
+
+Defaults:
+- `--from`: latest reachable semver tag (`vX.Y.Z` style) from the target ref
+- `--to`: `HEAD`
+- If no semver tags are found, the script drafts notes from repository history start
+
+The draft sections are heuristic and deterministic:
+- `Added`, `Changed`, `Fixed`, `Documentation`, `CI`
+- Merge commits are excluded
+- Duplicate bullet lines are removed
+
+Examples:
+
+```bash
+# Default: latest semver tag -> HEAD
+scripts/draft_release_notes.sh
+
+# Release candidate notes for an explicit range
+scripts/draft_release_notes.sh --from v1.1.2 --to HEAD
+
+# Write hotfix notes to a file
+scripts/draft_release_notes.sh --from v1.1.2 --to hotfix/urgent-fix --output /tmp/release-notes.md
+```
+
 ## Troubleshooting
 
 - **Run health check first:** `copilot_yolo health` will diagnose common issues
