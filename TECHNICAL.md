@@ -272,6 +272,69 @@ fi
 
 ---
 
+## Oncall Load Estimator
+
+The repository includes `scripts/estimate_oncall_load.sh`, a deterministic
+advisory tool for estimating the likely operational/oncall load of a change set.
+
+### Inputs
+
+- `scripts/estimate_oncall_load.sh`
+  - compares `HEAD` to the working tree, including untracked files
+- `scripts/estimate_oncall_load.sh --from <ref>`
+  - compares `<ref>` to the working tree
+- `scripts/estimate_oncall_load.sh --from <ref> --to <ref>`
+  - compares two committed refs
+
+### Heuristic Model
+
+The estimator intentionally uses simple, explainable heuristics instead of a
+statistical model:
+
+- **File criticality**
+  - Distributed runtime files (`.copilot_yolo.sh`, `install.sh`, completions,
+    entrypoint, config, Dockerfile, `.dockerignore`) carry the highest weight
+  - Other shell entrypoints rank below runtime files
+  - CI workflow changes rank above auxiliary scripts
+  - Docs and PR-detail changes stay low-impact
+- **Churn**
+  - Larger line deltas add points in coarse buckets
+  - Binary diffs add a separate penalty because line churn is unavailable
+- **Breadth**
+  - Diffs that span more files add load, even if line count is modest
+- **Docs-only cap**
+  - If a change touches only docs-oriented files, the final score is capped in
+    the low band
+
+The output always includes the overall score, a risk band, an area breakdown,
+and the top reasons that contributed to the estimate.
+
+### Maintenance Notes
+
+- Keep the distributed runtime file list aligned with the VERSION-bump CI guard
+  in `.github/workflows/ci.yml`
+- The estimator is intentionally advisory; it should stay fast, local, and easy
+  to audit in code review
+- Prefer updating weights and thresholds only when they improve explainability,
+  not to make the score appear more precise than it is
+
+### Known Tradeoffs
+
+- The score is repo-structure aware, not incident-data aware
+- Rename-only changes receive a small penalty even with zero textual churn
+- Binary files are penalized via a fixed weight because exact semantic impact is
+  unavailable from `git diff --numstat`
+
+### CI Coverage
+
+CI smoke-tests the estimator in a temporary git repository so the output remains
+stable and branch-independent. The test exercises:
+
+- docs-only working tree changes, which should stay in the low band
+- a committed range that touches runtime, CI, and binary content
+
+---
+
 ## Security Considerations
 
 ### Mounted Paths

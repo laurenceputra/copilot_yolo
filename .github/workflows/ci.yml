@@ -134,6 +134,74 @@ jobs:
           echo "=== Dry run output ==="
           echo "$output"
 
+  test-oncall-load-estimator:
+    name: Test Oncall Load Estimator
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Smoke test estimator output
+        run: |
+          set -euo pipefail
+          ESTIMATOR="${GITHUB_WORKSPACE}/scripts/estimate_oncall_load.sh"
+          TEST_REPO="$(mktemp -d)"
+
+          git init "${TEST_REPO}"
+          cd "${TEST_REPO}"
+          git config user.name "CI"
+          git config user.email "ci@example.com"
+
+          mkdir -p .github/workflows scripts .pr_details
+
+          cat > .copilot_yolo.sh <<'EOF'
+          #!/usr/bin/env bash
+          echo "ok"
+          EOF
+          chmod +x .copilot_yolo.sh
+
+          cat > README.md <<'EOF'
+          # Demo
+          EOF
+
+          cat > .github/workflows/ci.yml <<'EOF'
+          name: Demo
+          on: push
+          EOF
+
+          git add .
+          git commit -m "base"
+
+          printf '\nAdditional docs\n' >> README.md
+          docs_output="$("${ESTIMATOR}" --from HEAD)"
+          echo "${docs_output}"
+          echo "${docs_output}" | grep -q "ONCALL LOAD SCORE:"
+          echo "${docs_output}" | grep -q "RISK BAND: low"
+          echo "${docs_output}" | grep -q "Range: HEAD..working-tree"
+
+          git add README.md
+          git commit -m "docs-only change"
+
+          printf '\n# runtime change\n' >> .copilot_yolo.sh
+          printf '\n  workflow_dispatch:\n' >> .github/workflows/ci.yml
+          printf '\000\001\002' > fixture.bin
+
+          git add .copilot_yolo.sh .github/workflows/ci.yml fixture.bin
+          git commit -m "runtime and ci change"
+
+          output="$("${ESTIMATOR}" --from HEAD~1 --to HEAD)"
+          echo "${output}"
+          echo "${output}" | grep -q "ONCALL LOAD SCORE:"
+          echo "${output}" | grep -q "RISK BAND:"
+          echo "${output}" | grep -q "Area breakdown:"
+          echo "${output}" | grep -q "distributed runtime"
+          echo "${output}" | grep -q "Binary files: 1"
+          if echo "${output}" | grep -q "RISK BAND: low"; then
+            echo "Error: expected a non-low band for runtime and CI changes"
+            exit 1
+          fi
+
+          rm -rf "${TEST_REPO}"
+
   validate-version:
     name: Validate VERSION File
     runs-on: ubuntu-latest

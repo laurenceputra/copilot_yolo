@@ -206,6 +206,28 @@ Edit the configuration file to customize:
   by default. Run `copilot_yolo` from the repo you want to work on.
 - **For developers:** See [TECHNICAL.md](TECHNICAL.md) for architecture details and debugging guidance.
 
+## Developer utility: oncall load estimator
+
+This repo also includes `scripts/estimate_oncall_load.sh`, a small local utility
+for estimating how much operational/oncall attention a change set is likely to
+need after it lands.
+
+It is intentionally explainable rather than predictive: the script looks at the
+git diff, scores touched areas, churn, and breadth of change, then prints the
+main reasons behind the estimate.
+
+```bash
+# Compare your current working tree to HEAD
+scripts/estimate_oncall_load.sh
+
+# Compare two refs directly
+scripts/estimate_oncall_load.sh --from main --to HEAD
+```
+
+The estimator treats distributed runtime files as riskier than docs, notices
+large or broad diffs, and keeps docs-only changes in the low band. See
+`TECHNICAL.md` for the exact heuristic model and maintenance notes.
+
 ## Security note
 
 The container mounts `~/.gitconfig` (read-only) to enable Git operations with 
