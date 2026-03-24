@@ -5,6 +5,13 @@ All notable changes to copilot_yolo will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Documentation
+- Backfilled `README.md` with current dry-run, install/profile, auth, configuration, cleanup, and troubleshooting behavior
+- Updated contributor guidance to match the `main` branch workflow, CI validation, VERSION bump guard, and `.pr_details/description.md` requirement
+- Rewrote `TECHNICAL.md` to align with the current startup flow, config loading, entrypoint cleanup behavior, and release process
+
 ## [1.1.2] - 2026-02-09
 
 ### Added
