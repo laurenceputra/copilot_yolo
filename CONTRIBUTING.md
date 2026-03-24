@@ -101,15 +101,19 @@ That file should capture:
 - validation performed
 - environment limitations encountered while testing
 
+`.pr_details/` is gitignored, so treat `description.md` as local PR-prep
+material and as the source for the GitHub PR body rather than a file that will
+ship on `main`.
+
 You can use it directly when opening the PR:
 
 ```bash
 gh pr create --body-file .pr_details/description.md
 ```
 
-`main` does not currently include `scripts/draft_release_notes.sh`, so keep
-`.pr_details/description.md` and `CHANGELOG.md` accurate enough to serve as the
-source material for release-note drafting until that helper exists again.
+`main` does not currently include `scripts/draft_release_notes.sh`, so keep the
+GitHub PR body and `CHANGELOG.md` accurate enough to serve as release-note
+source material until that helper exists again.
 
 ## Pull request checklist
 
@@ -133,7 +137,8 @@ For maintainers, the current release flow is:
 4. Tag and publish the release from `main`
 
 Because the repo does not currently ship `scripts/draft_release_notes.sh` on
-`main`, draft release notes from the merged PR descriptions and `CHANGELOG.md`.
+`main`, draft release notes from the merged GitHub PR descriptions and
+`CHANGELOG.md`.
 
 ## Questions
 

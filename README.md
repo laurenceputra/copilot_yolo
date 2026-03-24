@@ -80,7 +80,8 @@ copilot_yolo review README.md
 
 ## Dry-run mode
 
-Preview the exact Docker commands without building or running the container:
+Preview the exact Docker commands without building or running the container after
+the wrapper finishes its normal Docker preflight checks:
 
 ```bash
 COPILOT_DRY_RUN=1 copilot_yolo --help
@@ -135,11 +136,11 @@ Host credentials are reused when present:
 | Host resource | Container path / form | Mode | Purpose |
 | --- | --- | --- | --- |
 | Current directory (`$(pwd)`) | `/workspace` by default | Read-write | Working repository files |
-| `~/.copilot` | `/home/copilot/.copilot` | Read-write | Copilot CLI configuration and credentials |
-| `~/.config/gh` or `$XDG_CONFIG_HOME/gh` | `/home/copilot/.config/gh` | Read-write | GitHub CLI authentication |
-| `~/.gitconfig` | `/home/copilot/.gitconfig` | Read-only | Git configuration |
+| `~/.copilot` | `${COPILOT_YOLO_HOME:-/home/copilot}/.copilot` | Read-write | Copilot CLI configuration and credentials |
+| `~/.config/gh` or `$XDG_CONFIG_HOME/gh` | `${COPILOT_YOLO_HOME:-/home/copilot}/.config/gh` | Read-write | GitHub CLI authentication |
+| `~/.gitconfig` | `${COPILOT_YOLO_HOME:-/home/copilot}/.gitconfig` | Read-only | Git configuration |
 | `GH_TOKEN`, `GITHUB_TOKEN` | Environment variables | Pass-through | Token-based GitHub authentication |
-| `~/.ssh` (optional) | `/home/copilot/.ssh` | Read-only | SSH keys for Git operations when `--mount-ssh` is used |
+| `~/.ssh` (optional) | `${COPILOT_YOLO_HOME:-/home/copilot}/.ssh` | Read-only | SSH keys for Git operations when `--mount-ssh` is used |
 
 SSH keys are **not** mounted by default. Opt in only when you need Git-over-SSH:
 
@@ -167,7 +168,8 @@ source ~/.copilot_yolo/.copilot_yolo_completion.zsh
 
 ## Configuration
 
-Generate a sample configuration file:
+Generate a sample configuration file (after the same Docker preflight the
+wrapper uses for every other command):
 
 ```bash
 copilot_yolo config
@@ -243,11 +245,15 @@ Skip the wrapper update check:
 COPILOT_SKIP_UPDATE_CHECK=1 copilot_yolo
 ```
 
-Skip the Copilot CLI version check and reuse an existing image:
+Skip the Copilot CLI npm lookup:
 
 ```bash
 COPILOT_SKIP_VERSION_CHECK=1 copilot_yolo
 ```
+
+When a local image already exists, the wrapper reuses it unless another rebuild
+trigger applies. If no image exists yet, the wrapper still builds one using the
+Dockerfile default Copilot CLI version (`latest`).
 
 Force a rebuild:
 

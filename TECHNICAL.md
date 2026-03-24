@@ -119,7 +119,8 @@ The local Docker image is rebuilt when one of these is true:
 - the embedded `@github/copilot` version differs from the latest npm version
 
 If `COPILOT_SKIP_VERSION_CHECK=1`, the wrapper skips the npm lookup and reuses the
-existing image unless another rebuild trigger applies.
+existing image unless another rebuild trigger applies. If no image exists yet,
+the build still proceeds with the Dockerfile default `COPILOT_VERSION=latest`.
 
 ## Command handling
 
@@ -266,7 +267,7 @@ Recommended contributor flow:
 2. Make runtime/docs changes together
 3. Bump `VERSION` if a distributed runtime file changed
 4. Update `CHANGELOG.md` for notable changes
-5. Write `.pr_details/description.md`
+5. Write `.pr_details/description.md` and use it for the GitHub PR body
 6. Run the relevant lightweight checks locally
 7. Open the PR against `main`
 
@@ -283,10 +284,12 @@ If Docker-dependent checks are unavailable, record that limitation in the PR bod
 
 ## Release workflow
 
-The current repository state on `main` does **not** include `scripts/draft_release_notes.sh`.
-Until that helper exists again, maintainers should draft release notes from:
+The current repository state on `main` does **not** include
+`scripts/draft_release_notes.sh`. `.pr_details/` is gitignored, so maintainers
+should treat it as local PR-prep material rather than repository state. Until
+that helper exists again, draft release notes from:
 
-- merged PR summaries in `.pr_details/description.md`
+- merged GitHub PR descriptions
 - `CHANGELOG.md`
 - the tagged diff for the release
 
