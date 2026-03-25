@@ -1,5 +1,5 @@
-.git
-.gitignore
-README.md
-CONTRIBUTING.md
-LICENSE
+# Keep the Docker build context limited to files the image build actually reads.
+# If the Dockerfile gains new COPY/ADD sources, update this allowlist too.
+*
+!.copilot_yolo.Dockerfile
+!.copilot_yolo_entrypoint.sh

@@ -26,7 +26,38 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 - Docker (Desktop or Engine)
 - Bash (macOS/Linux; Windows via WSL recommended)
-- Docker Buildx (recommended for reliable builds): https://docs.docker.com/build/buildx/
+- Docker Buildx (recommended for reliable builds and faster repeat builds): https://docs.docker.com/build/buildx/
+
+## Faster Docker rebuilds
+
+The local image build keeps its Docker build context intentionally tiny. Only
+`.copilot_yolo.Dockerfile` and `.copilot_yolo_entrypoint.sh` are included as
+ordinary context inputs, so rebuilds do not resend docs, CI files, or local
+PR-prep artifacts.
+
+The Dockerfile also uses BuildKit cache mounts for `apt` and `npm`. The wrapper
+already rebuilds with `DOCKER_BUILDKIT=1`, so warm rebuilds can reuse package
+manager caches when Docker BuildKit is available.
+
+If you add a new `COPY` or `ADD` source to `.copilot_yolo.Dockerfile`, update
+`.dockerignore` in the same change or the build will not see that file.
+
+Validate the cache behavior locally with a cold build followed by an immediate
+repeat build:
+
+```bash
+DOCKER_BUILDKIT=1 docker build --no-cache \
+  -f .copilot_yolo.Dockerfile \
+  -t copilot-yolo:bench \
+  --build-arg COPILOT_YOLO_VERSION="$(cat VERSION)" \
+  .
+
+DOCKER_BUILDKIT=1 docker build \
+  -f .copilot_yolo.Dockerfile \
+  -t copilot-yolo:bench \
+  --build-arg COPILOT_YOLO_VERSION="$(cat VERSION)" \
+  .
+```
 
 ## Install
 
@@ -255,6 +286,9 @@ When a local image already exists, the wrapper reuses it unless another rebuild
 trigger applies. If no image exists yet, the wrapper still builds one using the
 Dockerfile default Copilot CLI version (`latest`).
 
+The wrapper runs rebuilds with `DOCKER_BUILDKIT=1`, which activates the
+Dockerfile cache mounts used for `apt` and `npm`.
+
 Force a rebuild:
 
 ```bash
@@ -285,7 +319,8 @@ COPILOT_YOLO_BRANCH="main" \
 - **Docker missing or daemon stopped**: the wrapper exits before handling any
   command-specific flow. Install Docker, start the daemon, then retry.
 - **Buildx warning**: the wrapper can still run without Buildx, but builds may be
-  slower or less reliable. Install Docker Buildx for the best results.
+  slower or less reliable, and warm-build cache reuse may be reduced. Install
+  Docker Buildx for the best results.
 - **Config changes do not seem to apply**: confirm you edited the config file next
   to the installed script (`~/.copilot_yolo/.copilot_yolo.conf` by default).
 - **Authentication inside the container is missing**: run `copilot_yolo health`

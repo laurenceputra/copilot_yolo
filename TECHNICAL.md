@@ -122,6 +122,28 @@ If `COPILOT_SKIP_VERSION_CHECK=1`, the wrapper skips the npm lookup and reuses t
 existing image unless another rebuild trigger applies. If no image exists yet,
 the build still proceeds with the Dockerfile default `COPILOT_VERSION=latest`.
 
+### Build performance optimizations
+
+The wrapper runs image builds with `DOCKER_BUILDKIT=1`, and
+`.copilot_yolo.Dockerfile` now opts into modern Dockerfile syntax so it can use
+BuildKit cache mounts:
+
+- `/var/cache/apt` and `/var/lib/apt/lists` are cached across rebuilds
+- `/root/.npm` is cached across rebuilds
+
+Those mounts do not change runtime behavior, but they make repeat builds faster
+on hosts with BuildKit support because package-manager metadata and downloads do
+not have to be fetched from scratch each time.
+
+The build context is also intentionally allowlisted through `.dockerignore`.
+Only `.copilot_yolo.Dockerfile` and `.copilot_yolo_entrypoint.sh` are included
+as ordinary context inputs, which keeps docs, CI files, git metadata, and local
+PR-prep artifacts out of rebuilds.
+
+Contributor implication: if you add a new `COPY` or `ADD` source to
+`.copilot_yolo.Dockerfile`, you must update `.dockerignore` in the same change
+or the build will fail because that file is not part of the context.
+
 ## Command handling
 
 ### Wrapper-specific arguments
@@ -278,6 +300,15 @@ bash -n .copilot_yolo.sh .copilot_yolo_config.sh .copilot_yolo_entrypoint.sh ins
 COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_SKIP_VERSION_CHECK=1 ./.copilot_yolo.sh health
 COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_SKIP_VERSION_CHECK=1 ./.copilot_yolo.sh config
 COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_DRY_RUN=1 ./.copilot_yolo.sh --help
+```
+
+When changing `.dockerignore` or `.copilot_yolo.Dockerfile`, it is also worth
+running a cold Docker build followed by a warm repeat build and comparing the
+reported `transferring context` size plus cache hits:
+
+```bash
+DOCKER_BUILDKIT=1 docker build --no-cache -f .copilot_yolo.Dockerfile -t copilot-yolo:bench .
+DOCKER_BUILDKIT=1 docker build -f .copilot_yolo.Dockerfile -t copilot-yolo:bench .
 ```
 
 If Docker-dependent checks are unavailable, record that limitation in the PR body.
