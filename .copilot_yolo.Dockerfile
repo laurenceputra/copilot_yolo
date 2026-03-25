@@ -1,9 +1,12 @@
+# syntax=docker/dockerfile:1.7
 ARG BASE_IMAGE=node:20-slim
 FROM ${BASE_IMAGE}
 ARG COPILOT_VERSION=latest
 ARG COPILOT_YOLO_VERSION=unknown
 
-RUN apt-get update \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+  apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -24,7 +27,8 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 # Install GitHub Copilot CLI (provides the `copilot` binary).
-RUN npm install -g @github/copilot@${COPILOT_VERSION}
+RUN --mount=type=cache,target=/root/.npm \
+  npm install -g @github/copilot@${COPILOT_VERSION}
 
 # Make a writable home for arbitrary UID/GID at runtime.
 RUN mkdir -p /home/copilot/.config/github-copilot \

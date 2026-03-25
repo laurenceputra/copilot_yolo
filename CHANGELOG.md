@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated contributor guidance to match the `main` branch workflow, CI validation, VERSION bump guard, and `.pr_details/description.md` requirement
 - Rewrote `TECHNICAL.md` to align with the current startup flow, config loading, entrypoint cleanup behavior, and release process
 
+## [1.1.3] - 2026-03-25
+
+### Changed
+- Reduced the Docker build context to the Dockerfile and entrypoint inputs so rebuilds do not resend docs, CI configuration, or local PR-prep artifacts
+- Enabled BuildKit cache mounts for `apt` and `npm` in `.copilot_yolo.Dockerfile` to speed up repeat image builds without changing runtime behavior
+
+### Documentation
+- Documented the lean build context, BuildKit cache behavior, and local validation workflow for contributors
+
 ## [1.1.2] - 2026-02-09
 
 ### Added
@@ -95,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.1.3]: https://github.com/laurenceputra/copilot_yolo/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/laurenceputra/copilot_yolo/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/laurenceputra/copilot_yolo/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/laurenceputra/copilot_yolo/compare/v1.0.3...v1.1.0
