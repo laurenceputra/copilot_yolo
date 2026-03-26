@@ -1,112 +1,145 @@
 # Contributing to copilot_yolo
 
-Thank you for your interest in contributing to copilot_yolo!
+Thanks for contributing to `copilot_yolo`.
 
-## Development Setup
+## Development setup
 
-1. Clone the repository:
 ```bash
 git clone https://github.com/laurenceputra/copilot_yolo.git
 cd copilot_yolo
-```
-
-2. Make the script executable:
-```bash
 chmod +x .copilot_yolo.sh
 ```
 
-3. Make your changes to:
-   - `.copilot_yolo.sh` - Main bash script
-   - `.copilot_yolo.Dockerfile` - Docker image definition
-   - `.copilot_yolo_entrypoint.sh` - Container entrypoint script
-   - `.copilot_yolo_config.sh` - Configuration module
-   - `.copilot_yolo_completion.bash` / `.copilot_yolo_completion.zsh` - Shell completions
-   - `README.md` - User documentation
-   - `TECHNICAL.md` - Technical documentation
+The top-level runtime and docs files you will usually touch are:
 
-4. Test your changes:
-```bash
-# Test the script
-COPILOT_SKIP_UPDATE_CHECK=1 ./.copilot_yolo.sh --help
+- `.copilot_yolo.sh`
+- `.copilot_yolo.Dockerfile`
+- `.copilot_yolo_entrypoint.sh`
+- `.copilot_yolo_config.sh`
+- `.copilot_yolo_completion.bash`
+- `.copilot_yolo_completion.zsh`
+- `install.sh`
+- `README.md`
+- `TECHNICAL.md`
+- `CHANGELOG.md`
 
-# Test health check
-COPILOT_SKIP_UPDATE_CHECK=1 ./.copilot_yolo.sh health
+## Branch strategy
 
-# Test with a sample project
-mkdir -p /tmp/test-project
-cd /tmp/test-project
-echo "print('hello')" > test.py
-COPILOT_SKIP_UPDATE_CHECK=1 /path/to/copilot_yolo/.copilot_yolo.sh
-```
-
-## Architecture
-
-See [TECHNICAL.md](TECHNICAL.md) for detailed architecture documentation including:
-- Module structure and responsibilities
-- Auto-update mechanism design
-- Configuration system
-- Error handling patterns
-- Testing approach
-
-## Rebuilding the Docker Image
-
-After making changes to the Dockerfile or entrypoint script:
+Create feature branches from `main`; do not work directly on `main`.
 
 ```bash
-./.copilot_yolo.sh --pull
-# or
-COPILOT_BUILD_NO_CACHE=1 ./.copilot_yolo.sh
+git switch main
+git switch -c docs/example-change
 ```
 
-## Code Style
+Guidelines:
 
-### Bash Scripts
-- Follow the Google Shell Style Guide
-- Use `shellcheck` to lint bash scripts
-- Add comments for complex logic
-- Use meaningful variable names
-- Quote variables to prevent word splitting: `"${VAR}"`
-- Use `[[ ]]` for tests, not `[ ]`
-- Use `$(command)` not backticks
+- Keep branch names descriptive (`docs/...`, `fix/...`, `feature/...`)
+- Open PRs against `main`
+- Expect CI to run on PRs to `main` and on pushes to `main`
 
-### Docker Files
-- Keep layers minimal
-- Clean up after installing packages
-- Use specific versions where possible
+## Documentation expectations
 
-## Testing
+Keep the docs aligned with the shipped behavior in the same PR.
 
-Before submitting a PR, test:
+Update these files when applicable:
 
-1. Shell syntax: `bash -n .copilot_yolo.sh`
-2. ShellCheck: `shellcheck .copilot_yolo.sh`
-3. Fresh Docker build: `COPILOT_BUILD_NO_CACHE=1 ./.copilot_yolo.sh`
-4. Health check: `./.copilot_yolo.sh health`
-5. Config generation: `./.copilot_yolo.sh config`
-6. Running in different directories
-7. Help output: `./.copilot_yolo.sh --help`
+- `README.md` for user-facing behavior such as commands, mounts, auth, or configuration
+- `TECHNICAL.md` for implementation details, startup flow, CI behavior, or release process
+- `CHANGELOG.md` for notable changes, including documentation-only updates when they matter to users or contributors
+- `CONTRIBUTING.md` when the contributor workflow or validation expectations change
 
-See `.github/workflows/ci.yml` for automated tests that run on every PR.
+If you change runtime behavior, make the docs update part of the same branch rather
+than a follow-up cleanup.
 
-## Pull Request Process
+## VERSION bump rule for runtime files
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Update CHANGELOG.md with your changes
-5. Update TECHNICAL.md if you changed architecture
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+Changes to distributed runtime files must include a `VERSION` bump in the same PR.
+CI enforces this rule in `.github/workflows/ci.yml`.
 
-## Documentation
+Guarded runtime files are:
 
-When adding features:
-- Update README.md with user-facing changes
-- Update TECHNICAL.md with technical details
-- Update CHANGELOG.md following Keep a Changelog format
-- Add code comments for complex logic
+- `.copilot_yolo.sh`
+- `.copilot_yolo.Dockerfile`
+- `.copilot_yolo_entrypoint.sh`
+- `.copilot_yolo_config.sh`
+- `.copilot_yolo_completion.bash`
+- `.copilot_yolo_completion.zsh`
+- `install.sh`
+- `.dockerignore`
 
-## Questions?
+Pure documentation changes do not require a `VERSION` bump.
 
-Feel free to open an issue for any questions or concerns.
+## Validation
 
+Run the existing lightweight checks that match your change.
+
+Always safe to run:
+
+```bash
+bash -n .copilot_yolo.sh .copilot_yolo_config.sh .copilot_yolo_entrypoint.sh install.sh
+```
+
+When Docker is available locally, also use the same entry points covered by CI:
+
+```bash
+COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_SKIP_VERSION_CHECK=1 ./.copilot_yolo.sh health
+COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_SKIP_VERSION_CHECK=1 ./.copilot_yolo.sh config
+COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_DRY_RUN=1 ./.copilot_yolo.sh --help
+```
+
+If Docker-dependent checks are not available in your environment, note that in the
+PR description.
+
+## PR description workflow
+
+Always write the PR summary in `.pr_details/description.md` before opening the PR.
+That file should capture:
+
+- what changed and why
+- any assumptions or trade-offs
+- validation performed
+- environment limitations encountered while testing
+
+`.pr_details/` is gitignored, so treat `description.md` as local PR-prep
+material and as the source for the GitHub PR body rather than a file that will
+ship on `main`.
+
+You can use it directly when opening the PR:
+
+```bash
+gh pr create --body-file .pr_details/description.md
+```
+
+`main` does not currently include `scripts/draft_release_notes.sh`, so keep the
+GitHub PR body and `CHANGELOG.md` accurate enough to serve as release-note
+source material until that helper exists again.
+
+## Pull request checklist
+
+Before opening a PR:
+
+1. Branch from `main`
+2. Make the code and documentation changes together
+3. Update `CHANGELOG.md` when the change is notable
+4. Bump `VERSION` if you changed any distributed runtime file
+5. Write `.pr_details/description.md`
+6. Run the relevant validations
+7. Push your branch and open the PR against `main`
+
+## Release workflow
+
+For maintainers, the current release flow is:
+
+1. Merge reviewed PRs into `main`
+2. Ensure runtime-file changes landed with a matching `VERSION` bump
+3. Promote `CHANGELOG.md` notes into the next tagged release entry
+4. Tag and publish the release from `main`
+
+Because the repo does not currently ship `scripts/draft_release_notes.sh` on
+`main`, draft release notes from the merged GitHub PR descriptions and
+`CHANGELOG.md`.
+
+## Questions
+
+Open an issue if you need clarification on the workflow or architecture.
