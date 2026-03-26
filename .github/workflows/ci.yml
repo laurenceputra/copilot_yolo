@@ -134,6 +134,136 @@ jobs:
           echo "=== Dry run output ==="
           echo "$output"
 
+  test-runtime-regressions:
+    name: Test Runtime Regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test custom workdir cleanup
+        run: |
+          set -euo pipefail
+
+          TEST_DIR="$(mktemp -d)"
+          CUSTOM_WORKDIR="/custom/workspace"
+          IMAGE="copilot-entrypoint-test:ci"
+
+          cleanup() {
+            docker image rm "${IMAGE}" >/dev/null 2>&1 || true
+            rm -rf "${TEST_DIR}"
+          }
+          trap cleanup EXIT
+
+          docker build -t "${IMAGE}" -f - . <<'EOF'
+          FROM node:20-slim
+          RUN apt-get update \
+            && apt-get install -y --no-install-recommends gosu passwd sudo \
+            && rm -rf /var/lib/apt/lists/*
+          COPY .copilot_yolo_entrypoint.sh /usr/local/bin/copilot-entrypoint
+          RUN chmod +x /usr/local/bin/copilot-entrypoint
+          ENTRYPOINT ["copilot-entrypoint"]
+          EOF
+
+          docker run --rm \
+            -e TARGET_UID="$(id -u)" \
+            -e TARGET_GID="$(id -g)" \
+            -e TARGET_USER="$(id -un)" \
+            -e TARGET_GROUP="$(id -gn)" \
+            -e TARGET_HOME="/tmp/copilot-home" \
+            -e TARGET_WORKDIR="${CUSTOM_WORKDIR}" \
+            -e COPILOT_YOLO_CLEANUP=1 \
+            -v "${TEST_DIR}:${CUSTOM_WORKDIR}" \
+            "${IMAGE}" \
+            /bin/sh -lc "sudo sh -lc 'touch ${CUSTOM_WORKDIR}/root-owned && chown 0:0 ${CUSTOM_WORKDIR}/root-owned'"
+
+          test -f "${TEST_DIR}/root-owned"
+          owner="$(stat -c '%u:%g' "${TEST_DIR}/root-owned")"
+          if [[ "${owner}" != "$(id -u):$(id -g)" ]]; then
+            echo "Error: cleanup did not restore ownership for custom workdir"
+            ls -ln "${TEST_DIR}"
+            exit 1
+          fi
+
+          echo "✓ Custom workdir cleanup test passed"
+
+      - name: Test rebuild decision when CLI version changes
+        run: |
+          set -euo pipefail
+
+          STUB_DIR="$(mktemp -d)"
+          cleanup() {
+            rm -rf "${STUB_DIR}"
+          }
+          trap cleanup EXIT
+
+          cat > "${STUB_DIR}/docker" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          if [[ "${1:-}" == "info" ]]; then
+            exit 0
+          fi
+
+          if [[ "${1:-}" == "buildx" && "${2:-}" == "version" ]]; then
+            echo "github.com/docker/buildx 0.0.0"
+            exit 0
+          fi
+
+          if [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
+            exit 0
+          fi
+
+          if [[ "${1:-}" == "run" && "$*" == *"/opt/copilot-version"* ]]; then
+            echo "1.0.0"
+            exit 0
+          fi
+
+          if [[ "${1:-}" == "run" && "$*" == *"/opt/copilot-yolo-version"* ]]; then
+            tr -d '\n ' < VERSION
+            echo
+            exit 0
+          fi
+
+          echo "Unexpected docker invocation: $*" >&2
+          exit 1
+          EOF
+
+          cat > "${STUB_DIR}/npm" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          if [[ "${1:-}" == "view" && "${2:-}" == "@github/copilot" && "${3:-}" == "version" ]]; then
+            echo "9.9.9"
+            exit 0
+          fi
+
+          echo "Unexpected npm invocation: $*" >&2
+          exit 1
+          EOF
+
+          chmod +x "${STUB_DIR}/docker" "${STUB_DIR}/npm"
+
+          output="$(
+            PATH="${STUB_DIR}:$PATH" \
+            COPILOT_SKIP_UPDATE_CHECK=1 \
+            COPILOT_DRY_RUN=1 \
+            ./.copilot_yolo.sh --help 2>&1
+          )"
+
+          echo "${output}"
+
+          if ! echo "${output}" | grep -q "New version available: 1.0.0 -> 9.9.9"; then
+            echo "Error: expected rebuild reason for updated Copilot CLI version"
+            exit 1
+          fi
+
+          if ! echo "${output}" | grep -q "Dry run: would build image with:"; then
+            echo "Error: expected dry run to request a rebuild"
+            exit 1
+          fi
+
+          echo "✓ CLI version rebuild regression test passed"
+
   validate-version:
     name: Validate VERSION File
     runs-on: ubuntu-latest
