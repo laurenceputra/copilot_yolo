@@ -1,26 +1,29 @@
 ## Summary
-- tighten `.dockerignore` to allowlist only the Dockerfile and entrypoint build inputs
-- enable BuildKit cache mounts for `apt` and `npm` in `.copilot_yolo.Dockerfile`
-- fix the `apt` cache setup by temporarily disabling Debian's `docker-clean` policy during the build step instead of deleting the cache-mounted apt metadata
-- document the lean build context and cache-validation workflow, and bump `VERSION` to `1.1.3`
 
-## Assumptions and scope
-- Interpreted "Optimize build configuration for faster builds" as improving local Docker image rebuild time without changing wrapper behavior or the CI workflow.
-- Kept the work scoped to low-risk build inputs: Docker context size, Dockerfile layer/cache reuse, release notes, and contributor documentation.
+Fix two confirmed runtime bugs in the wrapper stack and add regression coverage for both.
 
-## Build context impact
-- Before: 14 files / 50,342 bytes
-- After: 2 files / 4,305 bytes
-- Reduction: 46,037 bytes (-91.4%)
-
-## Build timing and cache validation
-- Docker is not installed or not on `PATH` in this environment, so I could not run cold/warm `docker build` benchmarks here.
-- The Dockerfile now opts into Dockerfile syntax `1.7`, uses BuildKit cache mounts for `/var/cache/apt`, `/var/lib/apt/lists`, and `/root/.npm`, and temporarily disables Debian's `/etc/apt/apt.conf.d/docker-clean` policy during the `apt` build step so those caches can actually persist across repeat builds without changing the final runtime image behavior.
-- `README.md` and `TECHNICAL.md` include the exact cold/warm `docker build` commands contributors can run locally once Docker is available.
+- make ownership cleanup follow the configured `COPILOT_YOLO_WORKDIR` instead of always scanning `/workspace`
+- rebuild an existing image when the embedded `@github/copilot` version is stale even if the embedded `copilot_yolo` version already matches `VERSION`
+- clean up the self-update temporary download directory before the wrapper `exec`s into the new version
+- document the corrected cleanup and rebuild behavior and bump `VERSION` to `1.1.4`
 
 ## Validation
-- ✅ `bash -n .copilot_yolo.sh .copilot_yolo_config.sh .copilot_yolo_entrypoint.sh install.sh`
-- ⚠️ `shellcheck` is not installed in this environment
-- ⚠️ `COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_SKIP_VERSION_CHECK=1 ./.copilot_yolo.sh health` → `Error: docker is not installed or not on PATH.`
-- ⚠️ `COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_SKIP_VERSION_CHECK=1 ./.copilot_yolo.sh config` → `Error: docker is not installed or not on PATH.`
-- ⚠️ `COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_DRY_RUN=1 ./.copilot_yolo.sh --help` → `Error: docker is not installed or not on PATH.`
+
+Local validation in this environment used deterministic Docker/npm stubs because Docker is not installed here:
+
+- `bash -n .copilot_yolo.sh .copilot_yolo_entrypoint.sh .copilot_yolo_config.sh install.sh`
+- `COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_SKIP_VERSION_CHECK=1 bash ./.copilot_yolo.sh health`
+- `COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_SKIP_VERSION_CHECK=1 bash ./.copilot_yolo.sh config`
+- `COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_DRY_RUN=1 bash ./.copilot_yolo.sh --help`
+- installer smoke test using a temporary `COPILOT_YOLO_DIR`
+- regression check that dry-run wiring includes `TARGET_WORKDIR=/custom/workspace`
+- regression check that a stale embedded Copilot CLI version triggers a rebuild when npm reports a newer version
+
+CI coverage now also includes:
+
+- a containerized custom-workdir cleanup test that creates a root-owned file under a non-default workdir and verifies exit cleanup restores host ownership
+- a stubbed rebuild-decision test that proves a stale embedded Copilot CLI version still triggers a rebuild
+
+## Assumptions
+
+The requested base branch `nightshift/cost-attribution-estimator` was not available locally or on `origin`, so this branch was created from `feat/build-optimize-iter3` to keep the change isolated and reviewable.

@@ -106,7 +106,8 @@ It also attempts to download optional companion files without failing the update
 - `.copilot_yolo_completion.bash`
 - `.copilot_yolo_completion.zsh`
 
-After copying the new files into `SCRIPT_DIR`, it re-execs the updated wrapper.
+After copying the new files into `SCRIPT_DIR`, it removes the temporary download
+directory and re-execs the updated wrapper.
 
 ### Copilot CLI image rebuilds
 
@@ -236,9 +237,9 @@ The cleanup logic lives in `.copilot_yolo_entrypoint.sh`.
 Current behavior:
 
 1. Register `trap 'check_workspace_ownership; cleanup' EXIT`
-2. On exit, search `/workspace` for any file whose UID or GID does not match the target user
+2. On exit, search `TARGET_WORKDIR` (passed from `COPILOT_YOLO_WORKDIR`, default `/workspace`) for any file whose UID or GID does not match the target user
 3. Set `workspace_changed=1` only when a mismatch is found
-4. If `COPILOT_YOLO_CLEANUP` is `1` or `true`, run `chown -R "${TARGET_UID}:${TARGET_GID}" /workspace`
+4. If `COPILOT_YOLO_CLEANUP` is `1` or `true`, run `chown -R "${TARGET_UID}:${TARGET_GID}" "${TARGET_WORKDIR}"`
 5. Skip the recursive `chown` entirely when there is no mismatch
 
 The entrypoint also ensures the target home directory exists and attempts to chown

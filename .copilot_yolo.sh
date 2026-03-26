@@ -28,6 +28,14 @@ if [[ -f "${SCRIPT_DIR}/VERSION" ]]; then
   local_version="$(tr -d '\n ' < "${SCRIPT_DIR}/VERSION")"
 fi
 
+update_temp_dir=""
+cleanup_update_temp_dir() {
+  if [[ -n "${update_temp_dir}" && -d "${update_temp_dir}" ]]; then
+    rm -rf "${update_temp_dir}"
+    update_temp_dir=""
+  fi
+}
+
 install_hint=""
 case "$(uname -s)" in
   Darwin)
@@ -66,14 +74,14 @@ if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
       echo "copilot_yolo update available: ${local_version:-unknown} -> ${remote_version}"
       echo "Updating from ${REPO}/${BRANCH}..."
       
-      temp_dir="$(mktemp -d)"
-      trap 'rm -rf "${temp_dir}"' EXIT
+      update_temp_dir="$(mktemp -d)"
+      trap cleanup_update_temp_dir EXIT
       
       # Download files with a simple helper
       download_file() {
         local file="$1"
         local required="${2:-false}"
-        if curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file}" -o "${temp_dir}/${file}" 2>/dev/null; then
+        if curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file}" -o "${update_temp_dir}/${file}" 2>/dev/null; then
           return 0
         elif [[ "${required}" == "true" ]]; then
           return 1
@@ -94,18 +102,20 @@ if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
         download_file ".copilot_yolo_completion.zsh"
         
         # Copy all downloaded files
-        chmod +x "${temp_dir}/.copilot_yolo.sh"
+        chmod +x "${update_temp_dir}/.copilot_yolo.sh"
         # Required files
         for file in .copilot_yolo.sh .copilot_yolo.Dockerfile .copilot_yolo_entrypoint.sh VERSION; do
-          [[ -f "${temp_dir}/${file}" ]] && cp "${temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
+          [[ -f "${update_temp_dir}/${file}" ]] && cp "${update_temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
         done
         # Optional files
         for file in .dockerignore .copilot_yolo_config.sh .copilot_yolo_completion.bash .copilot_yolo_completion.zsh; do
-          [[ -f "${temp_dir}/${file}" ]] && cp "${temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
+          [[ -f "${update_temp_dir}/${file}" ]] && cp "${update_temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
         done
         
         echo "Updated to version ${remote_version}"
         echo "Re-executing with new version..."
+        cleanup_update_temp_dir
+        trap - EXIT
         exec "${SCRIPT_DIR}/.copilot_yolo.sh" "$@"
       else
         echo "Warning: failed to download updates; continuing with local version."
@@ -217,28 +227,24 @@ if [[ "${COPILOT_BUILD_NO_CACHE:-0}" == "1" || "${COPILOT_BUILD_PULL:-0}" == "1"
 elif [[ "${image_exists}" == "0" ]]; then
   need_build=1
   echo "Docker image not found. Building new image..."
-elif [[ -n "${local_version}" ]]; then
-  if [[ -z "${image_yolo_version}" || "${local_version}" != "${image_yolo_version}" ]]; then
-    need_build=1
-    if [[ -z "${image_yolo_version}" ]]; then
-      echo "Cannot determine current copilot_yolo image version. Rebuilding to ensure latest version..."
-    else
-      echo "copilot_yolo version changed: ${image_yolo_version} -> ${local_version}"
-      echo "Rebuilding Docker image to match copilot_yolo version..."
-    fi
-  fi
-elif [[ -n "${latest_version}" ]]; then
-  if [[ -z "${image_version}" || "${latest_version}" != "${image_version}" ]]; then
-    need_build=1
-    if [[ -z "${image_version}" ]]; then
-      echo "Cannot determine current image version. Rebuilding to ensure latest version..."
-    else
-      echo "New version available: ${image_version} -> ${latest_version}"
-      echo "Rebuilding Docker image with latest GitHub Copilot CLI..."
-    fi
+elif [[ -n "${local_version}" && ( -z "${image_yolo_version}" || "${local_version}" != "${image_yolo_version}" ) ]]; then
+  need_build=1
+  if [[ -z "${image_yolo_version}" ]]; then
+    echo "Cannot determine current copilot_yolo image version. Rebuilding to ensure latest version..."
   else
-    echo "Docker image is up to date with version ${image_version}"
+    echo "copilot_yolo version changed: ${image_yolo_version} -> ${local_version}"
+    echo "Rebuilding Docker image to match copilot_yolo version..."
   fi
+elif [[ -n "${latest_version}" && ( -z "${image_version}" || "${latest_version}" != "${image_version}" ) ]]; then
+  need_build=1
+  if [[ -z "${image_version}" ]]; then
+    echo "Cannot determine current image version. Rebuilding to ensure latest version..."
+  else
+    echo "New version available: ${image_version} -> ${latest_version}"
+    echo "Rebuilding Docker image with latest GitHub Copilot CLI..."
+  fi
+elif [[ -n "${latest_version}" && -n "${image_version}" ]]; then
+  echo "Docker image is up to date with version ${image_version}"
 fi
 
 docker_args=(
@@ -249,6 +255,7 @@ docker_args=(
   -e TARGET_USER="${USER_NAME}"
   -e TARGET_GROUP="${GROUP_NAME}"
   -e TARGET_HOME="${CONTAINER_HOME}"
+  -e TARGET_WORKDIR="${CONTAINER_WORKDIR}"
   -e COPILOT_YOLO_CLEANUP="${COPILOT_YOLO_CLEANUP:-1}"
   -v "${WORKSPACE}:${CONTAINER_WORKDIR}"
   -w "${CONTAINER_WORKDIR}"
