@@ -6,14 +6,15 @@ TARGET_GID="${TARGET_GID:-1000}"
 TARGET_USER="${TARGET_USER:-copilot}"
 TARGET_GROUP="${TARGET_GROUP:-copilot}"
 TARGET_HOME="${TARGET_HOME:-/home/copilot}"
+TARGET_WORKDIR="${TARGET_WORKDIR:-/workspace}"
 CLEANUP="${COPILOT_YOLO_CLEANUP:-1}"
 
 # Performance: only run cleanup if changes were made
 workspace_changed=0
 check_workspace_ownership() {
-  if [ -d /workspace ]; then
+  if [ -d "${TARGET_WORKDIR}" ]; then
     # Check if any files are not owned by target user (fails either the UID or GID check)
-    if [ -n "$(find /workspace \( ! -uid "${TARGET_UID}" -o ! -gid "${TARGET_GID}" \) -print -quit 2>/dev/null)" ]; then
+    if [ -n "$(find "${TARGET_WORKDIR}" \( ! -uid "${TARGET_UID}" -o ! -gid "${TARGET_GID}" \) -print -quit 2>/dev/null)" ]; then
       workspace_changed=1
     fi
   fi
@@ -21,9 +22,9 @@ check_workspace_ownership() {
 
 cleanup() {
   if [ "${CLEANUP}" = "1" ] || [ "${CLEANUP}" = "true" ]; then
-    if [ "${workspace_changed}" = "1" ] && [ -d /workspace ]; then
+    if [ "${workspace_changed}" = "1" ] && [ -d "${TARGET_WORKDIR}" ]; then
       echo "Restoring workspace permissions..." >&2
-      chown -R "${TARGET_UID}:${TARGET_GID}" /workspace 2>/dev/null || true
+      chown -R "${TARGET_UID}:${TARGET_GID}" "${TARGET_WORKDIR}" 2>/dev/null || true
     fi
   fi
 }
@@ -33,6 +34,11 @@ trap 'check_workspace_ownership; cleanup' EXIT
 case "${TARGET_HOME}" in
   /*) ;;
   *) TARGET_HOME="/home/copilot" ;;
+esac
+
+case "${TARGET_WORKDIR}" in
+  /*) ;;
+  *) TARGET_WORKDIR="/workspace" ;;
 esac
 
 if getent group "${TARGET_GID}" >/dev/null 2>&1; then

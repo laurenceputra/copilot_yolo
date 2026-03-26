@@ -235,7 +235,7 @@ Typical settings include:
 - `COPILOT_BASE_IMAGE` (default: `node:20-slim`)
 - `COPILOT_YOLO_IMAGE` (default: `copilot-cli-yolo:local`; only use images you trust)
 - `COPILOT_YOLO_HOME` (default: `/home/copilot`; must be an absolute container path)
-- `COPILOT_YOLO_WORKDIR` (default: `/workspace`; must be an absolute container path)
+- `COPILOT_YOLO_WORKDIR` (default: `/workspace`; must be an absolute container path and is also the path cleanup scans on exit)
 - `COPILOT_YOLO_CLEANUP` (default: `1`)
 - `COPILOT_YOLO_REPO` (default: `laurenceputra/copilot_yolo`)
 - `COPILOT_YOLO_BRANCH` (default: `main`)
@@ -258,7 +258,7 @@ Most normal edits already land with the correct ownership. Cleanup matters when 
 command inside the container creates files with the wrong owner or group (for
 example after using `sudo`). On exit, the entrypoint:
 
-- scans `/workspace` for files whose UID or GID no longer matches your host user
+- scans the configured container workdir (`COPILOT_YOLO_WORKDIR`, default `/workspace`) for files whose UID or GID no longer matches your host user
 - runs `chown -R` only when it detects a mismatch
 - skips the ownership reset entirely when `COPILOT_YOLO_CLEANUP=0`
 
@@ -273,7 +273,9 @@ The wrapper has two separate update checks:
    `COPILOT_YOLO_REPO` / `COPILOT_YOLO_BRANCH`. If the wrapper version changed,
    it downloads the latest runtime files into the install directory and re-execs.
 2. **Copilot CLI image update** checks npm for the latest `@github/copilot`
-   version and rebuilds the Docker image when the local image is missing or out of date.
+   version and rebuilds the Docker image when the local image is missing, when the
+   embedded `copilot_yolo` version no longer matches the local `VERSION`, or when
+   the embedded Copilot CLI version is behind npm.
 
 Skip the wrapper update check:
 
@@ -287,9 +289,9 @@ Skip the Copilot CLI npm lookup:
 COPILOT_SKIP_VERSION_CHECK=1 copilot_yolo
 ```
 
-When a local image already exists, the wrapper reuses it unless another rebuild
-trigger applies. If no image exists yet, the wrapper still builds one using the
-Dockerfile default Copilot CLI version (`latest`).
+When a local image already exists, the wrapper reuses it only when both embedded
+versions are current. If no image exists yet, the wrapper still builds one using
+the Dockerfile default Copilot CLI version (`latest`).
 
 The wrapper runs rebuilds with `DOCKER_BUILDKIT=1`, which activates the
 Dockerfile cache mounts used for `apt` and `npm`.
