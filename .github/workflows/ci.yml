@@ -22,6 +22,19 @@ jobs:
           format: gcc
           additional_files: '.copilot_yolo.sh .copilot_yolo_entrypoint.sh .copilot_yolo_config.sh install.sh'
 
+  metrics-coverage:
+    name: Metrics Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run metrics coverage analyzer
+        run: |
+          node scripts/analyze_metrics_coverage.js \
+            --manifest metrics/coverage_manifest.json \
+            --format text \
+            --fail-on-issues
+
   test-install-script:
     name: Test Install Script
     runs-on: ${{ matrix.os }}

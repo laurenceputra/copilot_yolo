@@ -6,12 +6,21 @@ BRANCH="${COPILOT_YOLO_BRANCH:-main}"
 INSTALL_DIR="${COPILOT_YOLO_DIR:-$HOME/.copilot_yolo}"
 PROFILE="${COPILOT_YOLO_PROFILE:-}"
 
+emit_metric() {
+  local event="$1"
+  if [[ "${COPILOT_YOLO_METRICS_TRACE:-0}" == "1" ]]; then
+    printf 'metric:%s\n' "${event}" >&2
+  fi
+}
+
 if ! command -v curl >/dev/null 2>&1; then
   echo "Error: curl is required to install copilot_yolo."
   exit 127
 fi
 
 raw_base="https://raw.githubusercontent.com/${REPO}/${BRANCH}"
+
+emit_metric "installer.bootstrap.start"
 
 detect_os() {
   local uname_out os_id os_like
@@ -128,6 +137,8 @@ for file in .copilot_yolo_config.sh .dockerignore .copilot_yolo_completion.bash 
   curl -fsSL "${raw_base}/${file}" -o "${INSTALL_DIR}/${file}" 2>/dev/null || true
 done
 
+emit_metric "installer.files.downloaded"
+
 chmod +x "${INSTALL_DIR}/.copilot_yolo.sh"
 
 cat > "${INSTALL_DIR}/env" <<EOF
@@ -144,6 +155,8 @@ elif [[ -n "\${ZSH_VERSION:-}" && -f "${INSTALL_DIR}/.copilot_yolo_completion.zs
 fi
 EOF
 
+emit_metric "installer.env.written"
+
 source_line="source \"${INSTALL_DIR}/env\""
 if [[ ! -f "${profile_path}" ]]; then
   touch "${profile_path}"
@@ -153,7 +166,11 @@ if ! grep -Fqs "${source_line}" "${profile_path}"; then
   printf '\n%s\n' "${source_line}" >> "${profile_path}"
 fi
 
+emit_metric "installer.profile.synced"
+
 print_docker_guidance
+
+emit_metric "installer.bootstrap.completed"
 
 echo "Installed to ${INSTALL_DIR}."
 echo "Restart your shell or run: source \"${profile_path}\""
