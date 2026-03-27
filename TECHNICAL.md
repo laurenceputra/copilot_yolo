@@ -266,12 +266,38 @@ Re-running the installer is the supported way to refresh the install directory.
 GitHub Actions currently runs these checks in `.github/workflows/ci.yml`:
 
 1. **ShellCheck Linting** for the shell scripts
-2. **Install Script Test** on Ubuntu and macOS
-3. **Health Check Test**
-4. **Config Generation Test**
-5. **Dry Run Test**
-6. **VERSION format validation**
-7. **VERSION guard for runtime files**
+2. **Metrics coverage analysis** for the shell instrumentation manifest
+3. **Install Script Test** on Ubuntu and macOS
+4. **Health Check Test**
+5. **Config Generation Test**
+6. **Dry Run Test**
+7. **VERSION format validation**
+8. **VERSION guard for runtime files**
+
+### Metrics coverage analyzer
+
+The metrics taxonomy for static validation lives in
+`metrics/coverage_manifest.json`. The analyzer itself lives in
+`scripts/analyze_metrics_coverage.js` and scans these runtime surfaces:
+
+- `.copilot_yolo.sh`
+- `install.sh`
+- `.copilot_yolo_config.sh`
+- `.copilot_yolo_entrypoint.sh`
+
+Each required flow declares the canonical event IDs and the file where each
+`emit_metric "event.id"` call must appear. The analyzer reports:
+
+- **covered** when an expected event appears exactly once in the expected file
+- **missing** when no matching call exists
+- **ambiguous** when duplicate calls exist or the event appears in the wrong file
+- **untracked** when the source contains event IDs not declared in the manifest
+
+That makes taxonomy drift explicit in CI and keeps the instrumentation rules
+reviewable outside the analyzer code.
+
+For local debugging, `COPILOT_YOLO_METRICS_TRACE=1` prints the event IDs to
+stderr in both the wrapper and the container entrypoint.
 
 ### Runtime-file VERSION guard
 
@@ -304,6 +330,7 @@ Suggested local checks:
 
 ```bash
 bash -n .copilot_yolo.sh .copilot_yolo_config.sh .copilot_yolo_entrypoint.sh install.sh
+node scripts/analyze_metrics_coverage.js --manifest metrics/coverage_manifest.json --format text --fail-on-issues
 COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_SKIP_VERSION_CHECK=1 ./.copilot_yolo.sh health
 COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_SKIP_VERSION_CHECK=1 ./.copilot_yolo.sh config
 COPILOT_SKIP_UPDATE_CHECK=1 COPILOT_DRY_RUN=1 ./.copilot_yolo.sh --help

@@ -8,6 +8,14 @@ TARGET_GROUP="${TARGET_GROUP:-copilot}"
 TARGET_HOME="${TARGET_HOME:-/home/copilot}"
 CLEANUP="${COPILOT_YOLO_CLEANUP:-1}"
 
+emit_metric() {
+  if [ "${COPILOT_YOLO_METRICS_TRACE:-0}" = "1" ]; then
+    printf 'metric:%s\n' "$1" >&2
+  fi
+}
+
+emit_metric "entrypoint.lifecycle.start"
+
 # Performance: only run cleanup if changes were made
 workspace_changed=0
 check_workspace_ownership() {
@@ -22,6 +30,7 @@ check_workspace_ownership() {
 cleanup() {
   if [ "${CLEANUP}" = "1" ] || [ "${CLEANUP}" = "true" ]; then
     if [ "${workspace_changed}" = "1" ] && [ -d /workspace ]; then
+      emit_metric "entrypoint.cleanup.permissions_restored"
       echo "Restoring workspace permissions..." >&2
       chown -R "${TARGET_UID}:${TARGET_GID}" /workspace 2>/dev/null || true
     fi
@@ -62,11 +71,15 @@ chown -R "${TARGET_UID}:${TARGET_GID}" "${TARGET_HOME}" 2>/dev/null || true
 printf '%s ALL=(ALL) NOPASSWD:ALL\n' "${TARGET_USER}" > /etc/sudoers.d/90-copilot
 chmod 0440 /etc/sudoers.d/90-copilot
 
+emit_metric "entrypoint.user.ready"
+
 if [ "$#" -eq 0 ]; then
+  emit_metric "entrypoint.exec.shell"
   gosu "${TARGET_UID}:${TARGET_GID}" /bin/sh
   exit $?
 fi
 
+emit_metric "entrypoint.exec.command"
 gosu "${TARGET_UID}:${TARGET_GID}" "$@"
 status=$?
 exit "${status}"
