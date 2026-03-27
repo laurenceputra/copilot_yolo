@@ -78,6 +78,7 @@ Always safe to run:
 
 ```bash
 bash -n .copilot_yolo.sh .copilot_yolo_config.sh .copilot_yolo_entrypoint.sh install.sh
+node scripts/analyze_metrics_coverage.js --manifest metrics/coverage_manifest.json --format text --fail-on-issues
 ```
 
 When Docker is available locally, also use the same entry points covered by CI:
