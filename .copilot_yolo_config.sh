@@ -7,11 +7,18 @@ SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 # Configuration file location - always in installation directory
 COPILOT_CONFIG_FILE="${SCRIPT_DIR}/.copilot_yolo.conf"
 
+if ! declare -F emit_metric >/dev/null 2>&1; then
+  emit_metric() {
+    :
+  }
+fi
+
 load_config() {
   # Load configuration if it exists in installation directory
   if [[ -f "${COPILOT_CONFIG_FILE}" ]]; then
     # shellcheck disable=SC1090
     source "${COPILOT_CONFIG_FILE}"
+    emit_metric "config.load.applied"
     return 0
   fi
   
@@ -50,6 +57,7 @@ generate_sample_config() {
 # COPILOT_YOLO_BRANCH="main"
 EOF
   
+  emit_metric "config.sample.generated"
   echo "Sample configuration generated at: ${output_file}"
   echo "Edit this file to customize copilot_yolo behavior."
 }

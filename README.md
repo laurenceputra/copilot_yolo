@@ -255,6 +255,38 @@ When a local image already exists, the wrapper reuses it unless another rebuild
 trigger applies. If no image exists yet, the wrapper still builds one using the
 Dockerfile default Copilot CLI version (`latest`).
 
+The wrapper runs rebuilds with `DOCKER_BUILDKIT=1`, which activates the
+Dockerfile cache mounts used for `apt` and `npm`.
+
+## Metrics coverage analyzer
+
+This repository includes a static metrics-coverage analyzer for the shell
+execution paths that are easiest to regress without noticing:
+
+- wrapper startup, update, build, dry-run, login, health, and config flows
+- installer bootstrap and profile wiring
+- config load and sample generation
+- entrypoint lifecycle, exec, and cleanup paths
+
+The analyzer reads `metrics/coverage_manifest.json`, scans the runtime shell
+files for canonical `emit_metric "event.id"` call sites, and reports whether
+each flow is fully covered, missing instrumentation, or ambiguously
+instrumented by duplicate call sites.
+
+Run it locally with:
+
+```bash
+node scripts/analyze_metrics_coverage.js \
+  --manifest metrics/coverage_manifest.json \
+  --format text \
+  --fail-on-issues
+```
+
+Use `--format json` when you want machine-readable output for automation.
+
+Set `COPILOT_YOLO_METRICS_TRACE=1` to print the event IDs to stderr while you
+debug wrapper or entrypoint flow selection locally.
+
 Force a rebuild:
 
 ```bash
@@ -311,7 +343,9 @@ Prefer the default mounts unless you specifically need more access, and treat
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the current
 branching, validation, and PR description workflow, and [TECHNICAL.md](TECHNICAL.md)
-for implementation details.
+for implementation details. When you change wrapper, installer, config, or
+entrypoint behavior, run the metrics coverage analyzer alongside the existing
+lightweight checks so the manifest and CI stay aligned.
 
 ## License
 

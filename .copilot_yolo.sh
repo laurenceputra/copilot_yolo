@@ -3,6 +3,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+emit_metric() {
+  local event="$1"
+  if [[ "${COPILOT_YOLO_METRICS_TRACE:-0}" == "1" ]]; then
+    printf 'metric:%s\n' "${event}" >&2
+  fi
+}
+
+emit_metric "wrapper.startup.begin"
+
 # Load configuration if available
 if [[ -f "${SCRIPT_DIR}/.copilot_yolo_config.sh" ]]; then
   # shellcheck source=.copilot_yolo_config.sh
@@ -61,14 +70,15 @@ fi
 if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
   if command -v curl >/dev/null 2>&1; then
     remote_version="$(curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/VERSION" 2>/dev/null | tr -d '\n' | tr -d ' ' || true)"
-    
+
     if [[ -n "${remote_version}" && "${remote_version}" != "${local_version}" ]]; then
+      emit_metric "wrapper.update.available"
       echo "copilot_yolo update available: ${local_version:-unknown} -> ${remote_version}"
       echo "Updating from ${REPO}/${BRANCH}..."
-      
+
       temp_dir="$(mktemp -d)"
       trap 'rm -rf "${temp_dir}"' EXIT
-      
+
       # Download files with a simple helper
       download_file() {
         local file="$1"
@@ -86,13 +96,13 @@ if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
          download_file ".copilot_yolo.Dockerfile" true && \
          download_file ".copilot_yolo_entrypoint.sh" true && \
          download_file "VERSION" true; then
-        
+
         # Download optional files (non-fatal)
         download_file ".dockerignore"
         download_file ".copilot_yolo_config.sh"
         download_file ".copilot_yolo_completion.bash"
         download_file ".copilot_yolo_completion.zsh"
-        
+
         # Copy all downloaded files
         chmod +x "${temp_dir}/.copilot_yolo.sh"
         # Required files
@@ -103,9 +113,10 @@ if [[ "${COPILOT_SKIP_UPDATE_CHECK:-0}" != "1" ]]; then
         for file in .dockerignore .copilot_yolo_config.sh .copilot_yolo_completion.bash .copilot_yolo_completion.zsh; do
           [[ -f "${temp_dir}/${file}" ]] && cp "${temp_dir}/${file}" "${SCRIPT_DIR}/${file}"
         done
-        
+
         echo "Updated to version ${remote_version}"
         echo "Re-executing with new version..."
+        emit_metric "wrapper.update.applied"
         exec "${SCRIPT_DIR}/.copilot_yolo.sh" "$@"
       else
         echo "Warning: failed to download updates; continuing with local version."
@@ -254,6 +265,10 @@ docker_args=(
   -w "${CONTAINER_WORKDIR}"
 )
 
+if [[ -n "${COPILOT_YOLO_METRICS_TRACE:-}" ]]; then
+  docker_args+=("-e" "COPILOT_YOLO_METRICS_TRACE=${COPILOT_YOLO_METRICS_TRACE}")
+fi
+
 if [[ -n "${GH_TOKEN:-}" ]]; then
   docker_args+=("-e" "GH_TOKEN=${GH_TOKEN}")
 fi
@@ -283,6 +298,7 @@ fi
 
 # Generate config command
 if [[ "${generate_config}" == "1" ]]; then
+  emit_metric "wrapper.config.requested"
   if [[ -f "${SCRIPT_DIR}/.copilot_yolo_config.sh" ]]; then
     # shellcheck source=.copilot_yolo_config.sh
     source "${SCRIPT_DIR}/.copilot_yolo_config.sh"
@@ -296,6 +312,7 @@ fi
 
 # Health check command
 if [[ "${run_health_check}" == "1" ]]; then
+  emit_metric "wrapper.health.reported"
   echo "=== copilot_yolo Health Check ==="
   echo ""
   
@@ -377,10 +394,17 @@ fi
 copilot_cmd=(copilot)
 if [[ "${#pass_args[@]}" -eq 0 || "${pass_args[0]}" != "login" ]]; then
   copilot_cmd+=(--yolo)
+else
+  emit_metric "wrapper.command.login"
 fi
 copilot_cmd+=("${pass_args[@]}")
 
+if [[ "${need_build}" == "1" ]]; then
+  emit_metric "wrapper.build.required"
+fi
+
 if [[ "${COPILOT_DRY_RUN:-0}" == "1" ]]; then
+  emit_metric "wrapper.dry_run.rendered"
   if [[ "${need_build}" == "1" ]]; then
     echo "Dry run: would build image with:"
     printf 'DOCKER_BUILDKIT=1 docker build'
@@ -418,7 +442,9 @@ if [[ "${need_build}" == "1" ]]; then
   fi
   # Force BuildKit to avoid the legacy builder deprecation warning.
   DOCKER_BUILDKIT=1 docker build "${build_args[@]}" -t "${IMAGE}" -f "${DOCKERFILE}" "${SCRIPT_DIR}"
+  emit_metric "wrapper.build.completed"
   echo "Docker image built successfully!"
 fi
 
+emit_metric "wrapper.run.execute"
 docker run "${docker_args[@]}" "${IMAGE}" "${copilot_cmd[@]}"

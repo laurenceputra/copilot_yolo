@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added a static metrics coverage analyzer and checked-in manifest for wrapper, installer, config, and entrypoint execution flows
+- Added CI enforcement so pull requests fail when required metrics emit points go missing, drift, or become ambiguous
+
 ### Documentation
 - Backfilled `README.md` with current dry-run, install/profile, auth, configuration, cleanup, and troubleshooting behavior
 - Updated contributor guidance to match the `main` branch workflow, CI validation, VERSION bump guard, and `.pr_details/description.md` requirement

@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "sources": [
+    ".copilot_yolo.sh",
+    ".copilot_yolo_config.sh",
+    ".copilot_yolo_entrypoint.sh",
+    "install.sh"
+  ],
+  "flows": [
+    {
+      "id": "wrapper-startup",
+      "description": "Wrapper startup through container execution",
+      "expected_events": [
+        { "id": "wrapper.startup.begin", "file": ".copilot_yolo.sh" },
+        { "id": "wrapper.run.execute", "file": ".copilot_yolo.sh" }
+      ]
+    },
+    {
+      "id": "wrapper-update",
+      "description": "Wrapper self-update detection and handoff",
+      "expected_events": [
+        { "id": "wrapper.update.available", "file": ".copilot_yolo.sh" },
+        { "id": "wrapper.update.applied", "file": ".copilot_yolo.sh" }
+      ]
+    },
+    {
+      "id": "wrapper-build",
+      "description": "Wrapper image rebuild decision and completion",
+      "expected_events": [
+        { "id": "wrapper.build.required", "file": ".copilot_yolo.sh" },
+        { "id": "wrapper.build.completed", "file": ".copilot_yolo.sh" }
+      ]
+    },
+    {
+      "id": "wrapper-dry-run",
+      "description": "Wrapper dry-run output path",
+      "expected_events": [
+        { "id": "wrapper.dry_run.rendered", "file": ".copilot_yolo.sh" }
+      ]
+    },
+    {
+      "id": "wrapper-login",
+      "description": "Wrapper login command special-case path",
+      "expected_events": [
+        { "id": "wrapper.command.login", "file": ".copilot_yolo.sh" }
+      ]
+    },
+    {
+      "id": "wrapper-health",
+      "description": "Wrapper health-check command path",
+      "expected_events": [
+        { "id": "wrapper.health.reported", "file": ".copilot_yolo.sh" }
+      ]
+    },
+    {
+      "id": "wrapper-config",
+      "description": "Wrapper config command dispatch into config generation",
+      "expected_events": [
+        { "id": "wrapper.config.requested", "file": ".copilot_yolo.sh" },
+        { "id": "config.sample.generated", "file": ".copilot_yolo_config.sh" }
+      ]
+    },
+    {
+      "id": "installer-bootstrap",
+      "description": "Installer bootstrap, profile sync, and completion",
+      "expected_events": [
+        { "id": "installer.bootstrap.start", "file": "install.sh" },
+        { "id": "installer.files.downloaded", "file": "install.sh" },
+        { "id": "installer.env.written", "file": "install.sh" },
+        { "id": "installer.profile.synced", "file": "install.sh" },
+        { "id": "installer.bootstrap.completed", "file": "install.sh" }
+      ]
+    },
+    {
+      "id": "config-loading",
+      "description": "Runtime config file loading",
+      "expected_events": [
+        { "id": "config.load.applied", "file": ".copilot_yolo_config.sh" }
+      ]
+    },
+    {
+      "id": "entrypoint-lifecycle",
+      "description": "Entrypoint startup, exec, and cleanup paths",
+      "expected_events": [
+        { "id": "entrypoint.lifecycle.start", "file": ".copilot_yolo_entrypoint.sh" },
+        { "id": "entrypoint.user.ready", "file": ".copilot_yolo_entrypoint.sh" },
+        { "id": "entrypoint.exec.shell", "file": ".copilot_yolo_entrypoint.sh" },
+        { "id": "entrypoint.exec.command", "file": ".copilot_yolo_entrypoint.sh" },
+        { "id": "entrypoint.cleanup.permissions_restored", "file": ".copilot_yolo_entrypoint.sh" }
+      ]
+    }
+  ]
+}
